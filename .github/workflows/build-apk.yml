@@ -41,20 +41,20 @@ jobs:
         run: gradle assembleDebug --no-daemon --stacktrace
 
       - name: Name the APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk PrincessMyra.apk
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk MyRush.apk
 
       - name: Keep the APK with this run
         uses: actions/upload-artifact@v4
         with:
-          name: PrincessMyra-apk
-          path: PrincessMyra.apk
+          name: MyRush-apk
+          path: MyRush.apk
 
       - name: Publish the APK as a release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: Princess Myra build ${{ github.run_number }}
+          name: MyRush build ${{ github.run_number }}
           body: |
-            Download PrincessMyra.apk on the Android phone or tablet and open it to install.
+            Download MyRush.apk on the Android phone or tablet and open it to install.
             Android will ask you to allow installing from this source the first time.
-          files: PrincessMyra.apk
+          files: MyRush.apk
