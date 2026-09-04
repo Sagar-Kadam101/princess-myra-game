@@ -94,8 +94,8 @@
     <p class="small" id="treasure"></p>
     <p class="small" id="lockLine"></p>
     <div id="resetNotice" class="notice" hidden></div>
-    <button class="big-btn" id="playBtn">Play!</button>
-    <div><button class="link-btn" id="shopBtn">Treasure Shop</button><button class="link-btn" id="settingsBtn">Settings</button><button class="link-btn" id="grownupsBtn">Grown-ups</button></div>
+    <button class="big-btn" id="playBtn">Start</button>
+    <div><button class="link-btn" id="shopBtn">Treasure Shop</button><button class="link-btn" id="settingsBtn">Settings</button><button class="link-btn" id="grownupsBtn" hidden>Grown-ups</button></div>
   </div>
 </div>
 
@@ -139,7 +139,7 @@
 <div id="settings" class="overlay solid" hidden>
   <div class="panel" style="min-width:min(88vw,460px)">
     <h2>Settings</h2>
-    <div class="setting"><span>Music</span><div class="row"><button id="musicOn">On</button><button id="musicOff">Off</button></div></div>
+    <div class="setting"><span>Music</span><div class="row" id="musicRow"><button data-tune="off">Off</button><button data-tune="lullaby">Lullaby</button><button data-tune="meadow">Meadow</button><button data-tune="night">Starry Night</button><button data-tune="adventure">Adventure</button></div></div>
     <div class="setting"><span>Sounds</span><div class="row"><button id="soundOn">On</button><button id="soundOff">Off</button></div></div>
     <div class="setting"><span>Read questions aloud</span><div class="row"><button id="speakOn">On</button><button id="speakOff">Off</button></div></div>
     <div class="setting"><span>Character</span><div class="row"><button id="changeChar">Change</button></div></div>
@@ -176,7 +176,8 @@
     <h1 id="lockedTitle">Hi!</h1>
     <p id="lockedMsg">Ask a grown-up to start your play time.</p>
     <div id="resetNotice2" class="notice" hidden></div>
-    <div><button class="link-btn" id="grownupsBtn2">Grown-ups</button></div>
+    <button class="big-btn" id="startLocked">Start</button>
+    <div><button class="link-btn" id="grownupsBtn2" hidden>Grown-ups</button></div>
   </div>
 </div>
 
@@ -203,11 +204,14 @@
     </div>
     <div id="parentSettings" hidden>
       <p id="timeInfo" class="small"></p>
+      <p class="small">Free play, no time limit:</p>
+      <div class="row"><button id="freeOn">On</button><button id="freeOff">Off</button></div>
       <p class="small">Give play time now:</p>
       <div class="row" id="grantRow"><button data-min="10">10 min</button><button data-min="20">20 min</button><button data-min="30">30 min</button><button data-min="45">45 min</button></div>
       <p class="small">Every day, without asking:</p>
       <div class="row" id="dailyRow"><button data-daily="0">Off</button><button data-daily="15">15 min</button><button data-daily="20">20 min</button><button data-daily="30">30 min</button><button data-daily="45">45 min</button></div>
-      <div class="row"><button id="lockNowBtn" class="warn">Lock now</button><button id="changePinBtn">Change PIN</button></div>
+      <div class="row"><button id="lockNowBtn" class="warn">Lock now</button><button id="changePinBtn">Set a PIN</button><button id="removePinBtn" class="warn" hidden>Remove PIN</button></div>
+      <p class="small" id="pinNote"></p>
     </div>
     <div><button class="link-btn" id="parentClose">Close</button></div>
   </div>
@@ -295,12 +299,13 @@ function $(id){ return document.getElementById(id); }
 /* ---------- storage ---------- */
 function load(key, def){ try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch (e){ return def; } }
 function save(key, val){ try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
-var settings = load('ppc-settings', { music: true, sound: true, speak: true });
+var settings = load('ppc-settings', { music: true, sound: true, speak: true, tune: 'lullaby' });
+if (!settings.tune) settings.tune = 'lullaby';
 var profile = load('ppc-profile', null);
 if (profile){ if (!profile.owned) profile.owned = [0]; if (profile.wear == null) profile.wear = 'level'; if (!profile.maxHearts) profile.maxHearts = 3; if (!profile.crowns) profile.crowns = [0]; if (profile.crown == null) profile.crown = 0; }
 if (profile){ if (!profile.owned) profile.owned = [0]; if (profile.wear == null) profile.wear = 'level'; if (!profile.maxHearts) profile.maxHearts = 3; if (!profile.crowns) profile.crowns = [0]; if (profile.crown == null) profile.crown = 0; }
 var total = load('ppc-total', { coins: 0, candies: 0 });
-var lock = load('ppc-lock', { pin: null, until: 0, day: '', played: 0, daily: 0, code: null, resetAt: 0 });
+var lock = load('ppc-lock', { pin: null, until: 0, day: '', played: 0, daily: 0, code: null, resetAt: 0, free: false });
 function saveTotal(){ save('ppc-total', total); }
 function saveLock(){ save('ppc-lock', lock); }
 function saveSettings(){ save('ppc-settings', settings); }
@@ -375,19 +380,39 @@ var sfx = {
 };
 
 /* ---------- background music: a small chiptune sequencer ---------- */
-var NOTE = { C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392, A4: 440, B4: 493.88, C5: 523.25, D5: 587.33, E5: 659.25, G5: 783.99, A5: 880, C6: 1046.5,
-  C3: 130.81, E3: 164.81, F3: 174.61, G3: 196, A3: 220, B3: 246.94 };
-var TUNE = {
-  bpm: 80,
-  melody: [
-    ['E5', null, 'G5', null, 'A5', null, 'G5', null, 'E5', null, 'D5', null, 'C5', null, null, null],
-    ['D5', null, 'E5', null, 'G5', null, 'E5', null, 'D5', null, 'C5', null, 'D5', null, null, null],
-    ['E5', null, 'G5', null, 'C6', null, 'A5', null, 'G5', null, 'E5', null, 'G5', null, null, null],
-    ['A5', null, 'G5', null, 'E5', null, 'D5', null, 'C5', null, null, null, null, null, null, null]
-  ],
-  chords: [['C4', 'E4', 'G4'], ['A3', 'C4', 'E4'], ['F3', 'A3', 'C4'], ['G3', 'B3', 'D4']],
-  bass: ['C3', 'A3', 'F3', 'G3']
+var NOTE = { C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392, A4: 440, B4: 493.88, C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46, G5: 783.99, A5: 880, C6: 1046.5,
+  C3: 130.81, D3: 146.83, E3: 164.81, F3: 174.61, G3: 196, A3: 220, B3: 246.94 };
+var TUNES = {
+  lullaby: { name: 'Lullaby', bpm: 72, lead: 'triangle', leadVol: 0.4, padVol: 0.2,
+    melody: [
+      ['E5', null, 'G5', null, 'A5', null, 'G5', null, 'E5', null, 'D5', null, 'C5', null, null, null],
+      ['D5', null, 'E5', null, 'G5', null, 'E5', null, 'D5', null, 'C5', null, 'D5', null, null, null],
+      ['E5', null, 'G5', null, 'C6', null, 'A5', null, 'G5', null, 'E5', null, 'G5', null, null, null],
+      ['A5', null, 'G5', null, 'E5', null, 'D5', null, 'C5', null, null, null, null, null, null, null]],
+    chords: [['C4', 'E4', 'G4'], ['A3', 'C4', 'E4'], ['F3', 'A3', 'C4'], ['G3', 'B3', 'D4']], bass: ['C3', 'A3', 'F3', 'G3'] },
+  meadow: { name: 'Meadow', bpm: 84, lead: 'sine', leadVol: 0.5, padVol: 0.16,
+    melody: [
+      ['F5', null, null, 'A5', null, null, 'C6', null, 'A5', null, null, 'G5', null, null, 'F5', null],
+      ['G5', null, null, 'A5', null, null, 'G5', null, 'F5', null, null, 'D5', null, null, null, null],
+      ['F5', null, null, 'G5', null, null, 'A5', null, 'C6', null, null, 'A5', null, null, 'G5', null],
+      ['A5', null, null, 'G5', null, null, 'F5', null, 'D5', null, null, 'F5', null, null, null, null]],
+    chords: [['F3', 'A3', 'C4'], ['D4', 'F4', 'A4'], ['A3', 'C4', 'F4'], ['G3', 'B3', 'D4']], bass: ['F3', 'D3', 'F3', 'G3'] },
+  night: { name: 'Starry Night', bpm: 64, lead: 'sine', leadVol: 0.42, padVol: 0.22,
+    melody: [
+      ['A4', null, 'C5', null, 'E5', null, null, null, 'D5', null, 'C5', null, 'B4', null, null, null],
+      ['A4', null, 'C5', null, 'E5', null, null, null, 'G5', null, 'E5', null, 'D5', null, null, null],
+      ['F5', null, 'E5', null, 'D5', null, null, null, 'C5', null, 'B4', null, 'A4', null, null, null],
+      ['B4', null, 'C5', null, 'D5', null, null, null, 'C5', null, null, null, null, null, null, null]],
+    chords: [['A3', 'C4', 'E4'], ['F3', 'A3', 'C4'], ['D4', 'F4', 'A4'], ['E4', 'G4', 'B4']], bass: ['A3', 'F3', 'D3', 'E3'] },
+  adventure: { name: 'Little Adventure', bpm: 96, lead: 'triangle', leadVol: 0.5, padVol: 0.14,
+    melody: [
+      ['C5', null, 'E5', null, 'G5', null, 'E5', null, 'A5', null, 'G5', null, 'E5', null, 'D5', null],
+      ['C5', null, 'D5', null, 'E5', null, 'G5', null, 'D5', null, null, null, null, null, null, null],
+      ['E5', null, 'G5', null, 'A5', null, 'G5', null, 'C6', null, 'A5', null, 'G5', null, 'E5', null],
+      ['D5', null, 'E5', null, 'D5', null, 'C5', null, 'C5', null, null, null, null, null, null, null]],
+    chords: [['C4', 'E4', 'G4'], ['F3', 'A3', 'C4'], ['A3', 'C4', 'E4'], ['G3', 'B3', 'D4']], bass: ['C3', 'F3', 'A3', 'G3'] }
 };
+function TUNE(){ return TUNES[settings.tune] || TUNES.lullaby; }
 var music = {
   on: true, running: false, nextT: 0, step: 0, gainNode: null, timer: null, duck: 1,
   start: function(){
@@ -399,9 +424,9 @@ var music = {
   },
   tick: function(){
     if (!AC) return;
-    var want = (settings.music && (S.state === 'play' || S.state === 'title' || S.state === 'win' || S.state === 'quiz' || S.state === 'shop')) ? 0.055 * this.duck : 0;
+    var want = (settings.music && !document.hidden && (S.state === 'play' || S.state === 'title' || S.state === 'win' || S.state === 'quiz' || S.state === 'shop')) ? 0.055 * this.duck : 0;
     this.gainNode.gain.setTargetAtTime(want, AC.currentTime, 0.2);
-    var stepDur = 60 / TUNE.bpm / 4;
+    var stepDur = 60 / TUNE().bpm / 4;
     while (this.nextT < AC.currentTime + 0.2){
       if (want > 0) this.play(this.step, this.nextT, stepDur);
       this.nextT += stepDur; this.step = (this.step + 1) % 64;
@@ -414,12 +439,15 @@ var music = {
     o.connect(g); g.connect(this.gainNode); o.start(t0); o.stop(t0 + d + 0.02);
   },
   play: function(step, t0, dur){
-    var bar = Math.floor(step / 16), i = step % 16;
-    var m = TUNE.melody[bar][i]; if (m) this.note(NOTE[m], t0, dur * 2.2, 'triangle', 0.45);
-    if (i % 4 === 0){ var ch = TUNE.chords[bar]; for (var c = 0; c < ch.length; c++) this.note(NOTE[ch[c]], t0 + c * 0.02, dur * 4.5, 'sine', 0.22); }
-    if (i === 0 || i === 8) this.note(NOTE[TUNE.bass[bar]], t0, dur * 7, 'triangle', 0.5);
+    var T = TUNE(), bar = Math.floor(step / 16), i = step % 16;
+    var m = T.melody[bar][i]; if (m) this.note(NOTE[m], t0, dur * 2.4, T.lead, T.leadVol);
+    if (i % 4 === 0){ var ch = T.chords[bar]; for (var c = 0; c < ch.length; c++) this.note(NOTE[ch[c]], t0 + c * 0.03, dur * 4.5, 'sine', T.padVol); }
+    if (i === 0 || i === 8) this.note(NOTE[T.bass[bar]], t0, dur * 7, 'triangle', 0.45);
   }
 };
+
+document.addEventListener('visibilitychange', function(){ try { if (AC){ if (document.hidden) AC.suspend(); else AC.resume(); } if (document.hidden && window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {} });
+window.addEventListener('pagehide', function(){ try { if (AC) AC.suspend(); } catch (e) {} });
 
 /* ---------- speech ---------- */
 function say(text){
@@ -477,7 +505,7 @@ var CROWNS = [{ name: 'Gold crown', price: 0 }, { name: 'Silver crown', price: 4
 /* ---------- state ---------- */
 var S = { state: 'title', level: 1, coins: 0, candies: 0, levelCoins: 0, levelCandies: 0, time: 0, shake: 0, storm: 0 };
 var P = { x: 100, y: GY - 66, w: 26, h: 66, vx: 0, vy: 0, onGround: false, facing: 1, hearts: 3, power: null, powerT: 0, powerMax: 1,
-  cd: 0, swing: 0, punch: 0, kick: 0, attackCd: 0, inv: 0, moving: false, ballCd: 0, dance: false, walk: 0, jumping: false, coyote: 0, jumpBuf: 0, crouch: false };
+  cd: 0, swing: 0, punch: 0, kick: 0, attackCd: 0, inv: 0, moving: false, ballCd: 0, dance: false, walk: 0, jumping: false, coyote: 0, jumpBuf: 0, crouch: false, guard: false };
 var L = null, monsters = [], pickups = [], balls = [], parts = [], bolts = [], weather = [];
 var camX = 0, flash = 0, nextBolt = 0, winT = 0, loseT = 0, sectionIdx = 0, pausedFrom = null;
 var keys = {}, touch = {}, pointers = {}, prevJumpHeld = false, prevAttack = false;
@@ -853,6 +881,8 @@ function updatePlay(dt){
   if (P.hearts < maxHearts() && S.candies >= 5){ S.candies -= 5; P.hearts++; sfx.candy(); banner('Yum! 5 candies gave a heart!'); burst(P.x + P.w / 2, P.y + 10, 10, '#ff5c8a', 'heart'); }
 
   var pcx = P.x + P.w / 2, pBottom = P.y + P.h;
+  P.guard = false;
+  for (i = 0; i < monsters.length; i++){ var gm = monsters[i]; if (gm.type === 'wise' || gm.dizzy > 0) continue; if (Math.abs(gm.x + gm.w / 2 - pcx) < 150 && Math.abs((gm.y + gm.h) - pBottom) < 90){ P.guard = true; break; } }
   var range = P.power === 'axe' ? 74 : P.power === 'bat' ? 84 : (P.power === 'bag' || P.power === 'star' || P.power === 'wand') ? 64 : 48;
   var dmg = (P.power === 'axe' || P.power === 'star') ? 2 : 1;
   if (P.cd <= 0){
@@ -1280,28 +1310,34 @@ function drawArm(sx, sy, ex, ey, hx, hy, skin, fist){
 // o: {gender, skin, hair, style, outfit, crown, facing, run, inAir, crouch, dance, p, punch, kick, power, t}
 function drawCharacter(o){
   var D = o.outfit, prince = o.gender === 'prince', skin = o.skin, hairC = o.hair, run = o.run, inAir = o.inAir, crouch = o.crouch, p = o.p, t = o.t;
-  var kick = o.kick > 0 ? Math.sin((1 - o.kick / 0.35) * Math.PI) : 0, punch = o.punch > 0 ? Math.sin((1 - o.punch / 0.25) * Math.PI) : 0;
+  var kq = o.kick > 0 ? 1 - o.kick / 0.35 : 0, pq = o.punch > 0 ? 1 - o.punch / 0.25 : 0;
+  var kickExt = kq > 0 ? (kq < 0.35 ? 0 : kq < 0.65 ? (kq - 0.35) / 0.3 : 1 - (kq - 0.65) / 0.35) : 0;
+  var chamber = kq > 0 ? (kq < 0.35 ? kq / 0.35 : kq < 0.85 ? 1 : 1 - (kq - 0.85) / 0.15) : 0;
+  var jab = pq > 0 ? Math.sin(pq * Math.PI) : 0;
+  var guard = o.guard && !run && !inAir && !crouch && !o.dance;
+  var fighting = guard || kq > 0 || pq > 0;
   ctx.save();
   ctx.scale(o.facing * 0.8, 0.8);
-  var hipY = crouch ? -30 : -40, fA, fB;
+  var hipY = crouch ? -30 : (fighting ? -37 : -40), fA, fB;
   if (o.dance){ fA = [-7, -Math.abs(Math.sin(t * 8)) * 7]; fB = [7, -Math.abs(Math.cos(t * 8)) * 7]; }
-  else if (kick > 0){ fA = [8 + 28 * kick, -6 - 26 * kick]; fB = [-8, inAir ? -6 : 0]; }
+  else if (kq > 0){ fA = [8 + 8 * chamber + 26 * kickExt, -(30 * chamber) + 2 * kickExt]; fB = [-9, inAir ? -6 : 0]; }
   else if (inAir){ fA = [12, -16]; fB = [-9, -5]; }
   else if (crouch){ fA = [11, 0]; fB = [-10, 0]; }
+  else if (fighting){ fA = [12, 0]; fB = [-12, 0]; }
   else if (run){ fA = [16 * Math.sin(p), -Math.max(0, Math.sin(p + 1.1)) * 11]; fB = [16 * Math.sin(p + Math.PI), -Math.max(0, Math.sin(p + Math.PI + 1.1)) * 11]; }
   else { fA = [7, 0]; fB = [-6, 0]; }
   var legCol = prince ? D.dark : skin, shoe = prince ? '#4a2c17' : D.dark;
   drawLeg(hipY, fB, legCol, shoe); drawLeg(hipY, fA, legCol, shoe);
   var bob = o.dance ? Math.abs(Math.sin(t * 8)) * 8 : run ? Math.abs(Math.sin(p)) * 2.5 : inAir ? 0 : Math.sin(t * 2.5) * 1;
-  var lean = -0.12 * run + (kick > 0 ? 0.18 * kick : 0) - (punch > 0 ? 0.08 * punch : 0);
+  var lean = -0.12 * run - 0.16 * kickExt + 0.1 * jab;
   ctx.translate(0, hipY); ctx.rotate(lean); if (crouch) ctx.scale(1, 0.88); ctx.translate(0, -hipY - bob);
-  var wy = hipY - 16, hem = hipY + 14, shY = wy - 14, hy = wy - 30, shX = 8;
+  var wy = hipY - 16, hem = hipY + 14, shY = wy - 14, hy = wy - 30, shX = prince ? 10 : 8;
   if (prince){
-    var cf = run ? 10 + 4 * Math.sin(p * 2) : (inAir ? 14 : 3);
-    ctx.fillStyle = D.trim; ctx.beginPath(); ctx.moveTo(-6, shY - 2); ctx.lineTo(6, shY - 2); ctx.lineTo(-4 - cf * 0.3, hem + 2); ctx.quadraticCurveTo(-14 - cf, hem - 6, -16 - cf, wy + 4); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = D.dress; rrect(-11, shY, 22, hem - shY + 10, 7);
-    ctx.fillStyle = D.dark; ctx.fillRect(-11, hipY - 3, 22, 5); ctx.fillStyle = '#ffd23f'; rrect(-3, hipY - 4, 6, 7, 2);
-    ctx.fillStyle = D.trim; ctx.beginPath(); ctx.moveTo(-6, shY); ctx.lineTo(0, shY + 10); ctx.lineTo(6, shY); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = D.dress; rrect(-12, shY - 2, 24, hem - shY + 8, 6);
+    ctx.fillStyle = shade(D.dress, -0.15); ctx.fillRect(-12, wy + 2, 24, 2);
+    ctx.fillStyle = '#3b2412'; ctx.fillRect(-12, hipY - 4, 24, 6); ctx.fillStyle = '#ffd23f'; rrect(-4, hipY - 5, 8, 8, 2); ctx.fillStyle = '#3b2412'; rrect(-2, hipY - 3, 4, 4, 1);
+    ctx.fillStyle = D.trim; ctx.beginPath(); ctx.moveTo(-7, shY - 2); ctx.lineTo(0, shY + 9); ctx.lineTo(7, shY - 2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#ffd23f'; circle(-10, shY, 3); circle(10, shY, 3);
   } else {
     var fl = run ? 3 + 2 * Math.sin(p * 2) : (inAir ? 5 : 0);
     ctx.fillStyle = D.dress; ctx.beginPath(); ctx.moveTo(-9, wy); ctx.lineTo(9, wy); ctx.lineTo(16 + fl * 0.5, hem); ctx.quadraticCurveTo(0, hem + 5, -16 - fl, hem); ctx.closePath(); ctx.fill();
@@ -1309,19 +1345,20 @@ function drawCharacter(o){
     ctx.fillStyle = D.dark; rrect(-10, shY, 20, wy - shY + 4, 6);
     ctx.fillStyle = D.trim; ctx.fillRect(-10, wy - 3, 20, 4); heart(0, shY + 8, 3);
   }
-  // arms: two segments each
-  var bsx = -shX, fsx = shX;
-  var bE, bH, fE, fH;
+  // arms: shoulder, elbow, hand
+  var bsx = -shX, fsx = shX, bE, bH, fE, fH;
   if (o.dance){ bE = [-18, shY - 12]; bH = [-14, shY - 26]; fE = [18, shY - 12]; fH = [14, shY - 26]; }
-  else if (punch > 0){ bE = [-14, shY + 8]; bH = [-8, shY + 14]; fE = [8 + 12 * punch, shY + 2 - 4 * punch]; fH = [12 + 22 * punch, shY + 6 - 8 * punch]; }
-  else if (kick > 0){ bE = [-18, shY - 6]; bH = [-24, shY - 18]; fE = [14, shY + 8]; fH = [6, shY + 16]; }
+  else if (pq > 0){ bE = [-14, shY + 12]; bH = [-2, shY + 2]; fE = [12 + 8 * jab, shY + 6 - 2 * jab]; fH = [14 + 24 * jab, shY + 2 - 2 * jab]; }
+  else if (kq > 0){ bE = [-16, shY + 10]; bH = [-6, shY]; fE = [14, shY + 12]; fH = [8 + 6 * kickExt, shY + 2 - 4 * kickExt]; }
+  else if (guard){ bE = [-15, shY + 12]; bH = [-3, shY + 2]; fE = [15, shY + 10]; fH = [9, shY - 2]; }
   else if (inAir){ bE = [-16, shY - 8]; bH = [-20, shY - 22]; fE = [16, shY - 6]; fH = [20, shY - 20]; }
   else if (run){ var sa = Math.sin(p), sb = Math.sin(p + Math.PI);
-    bE = [-6 + 11 * sb, shY + 10 - 3 * Math.abs(sb)]; bH = [-2 + 20 * sb, shY + 4 - 6 * Math.abs(sb) + 4];
-    fE = [6 + 11 * sa, shY + 10 - 3 * Math.abs(sa)]; fH = [10 + 20 * sa, shY + 4 - 6 * Math.abs(sa) + 4]; }
+    bE = [-6 + 11 * sb, shY + 10 - 3 * Math.abs(sb)]; bH = [-2 + 20 * sb, shY + 8 - 6 * Math.abs(sb)];
+    fE = [6 + 11 * sa, shY + 10 - 3 * Math.abs(sa)]; fH = [10 + 20 * sa, shY + 8 - 6 * Math.abs(sa)]; }
   else if (o.power && o.power !== 'star' && o.power !== 'bag'){ bE = [-19, shY + 12]; bH = [-12, hipY - 2]; fE = [15, shY + 10]; fH = [17, shY + 22]; }
+  else if (prince){ bE = [-18, shY + 14]; bH = [-14, hipY]; fE = [18, shY + 14]; fH = [14, hipY]; }
   else { bE = [-19, shY + 12]; bH = [-12, hipY - 2]; fE = [19, shY + 12]; fH = [12, hipY - 2]; }
-  drawArm(bsx, shY + 2, bE[0], bE[1], bH[0], bH[1], skin, punch > 0 || kick > 0);
+  drawArm(bsx, shY + 2, bE[0], bE[1], bH[0], bH[1], skin, fighting);
   // hair back
   ctx.fillStyle = hairC;
   if (prince){ circle(0, hy - 3, 14); if (o.style === 1){ for (var s = -2; s <= 2; s++){ ctx.beginPath(); ctx.moveTo(s * 6 - 4, hy - 11); ctx.lineTo(s * 6 + 1 - run * 3, hy - 23); ctx.lineTo(s * 6 + 4, hy - 11); ctx.closePath(); ctx.fill(); } } }
@@ -1330,8 +1367,10 @@ function drawCharacter(o){
     if (o.style === 1){ ellipse(-13 - run * 6, hy + 4 + Math.sin(t * 10) * run * 2, 6, 15); circle(-8, hy - 11, 4); }
     else { ellipse(-12 - run * 3, hy + 12, 5.5, 13 + run * 2); ellipse(12 - run * 2, hy + 12, 5, 12); }
   }
-  // head
-  ctx.fillStyle = skin; circle(0, hy, 12.5);
+  // head: ears, face shape (prince squarer jaw)
+  ctx.fillStyle = skin; circle(-12, hy + 1, 3); circle(12, hy + 1, 3);
+  if (prince){ ctx.beginPath(); ctx.arc(0, hy - 1, 12.5, Math.PI, 0); ctx.lineTo(12.5, hy + 6); ctx.quadraticCurveTo(12.5, hy + 13, 5, hy + 13.5); ctx.lineTo(-5, hy + 13.5); ctx.quadraticCurveTo(-12.5, hy + 13, -12.5, hy + 6); ctx.closePath(); ctx.fill(); }
+  else circle(0, hy, 12.5);
   ctx.fillStyle = hairC;
   if (prince){ ctx.beginPath(); ctx.arc(0, hy - 1, 13, Math.PI * 1.02, Math.PI * 1.98); ctx.lineTo(9, hy - 6); ctx.lineTo(0, hy - 9); ctx.lineTo(-8, hy - 5); ctx.closePath(); ctx.fill(); }
   else { ctx.beginPath(); ctx.arc(0, hy - 2, 13, Math.PI * 1.05, Math.PI * 1.95); ctx.lineTo(7, hy - 8); ctx.lineTo(-2, hy - 6); ctx.closePath(); ctx.fill(); }
@@ -1341,20 +1380,25 @@ function drawCharacter(o){
   else if (prince){ ctx.fillStyle = cc; ctx.beginPath(); ctx.moveTo(-9, cy0 + 1); ctx.lineTo(-9, cy0 - 7); ctx.lineTo(-4, cy0 - 3); ctx.lineTo(0, cy0 - 10); ctx.lineTo(4, cy0 - 3); ctx.lineTo(9, cy0 - 7); ctx.lineTo(9, cy0 + 1); ctx.closePath(); ctx.fill(); ctx.fillStyle = crown === 3 ? '#fff3b0' : '#ff4f6d'; circle(0, cy0 - 3, 2); }
   else { ctx.fillStyle = cc; ctx.beginPath(); ctx.moveTo(-10, cy0); ctx.lineTo(-10, cy0 - 10); ctx.lineTo(-5, cy0 - 4); ctx.lineTo(0, cy0 - 15); ctx.lineTo(5, cy0 - 4); ctx.lineTo(10, cy0 - 10); ctx.lineTo(10, cy0); ctx.closePath(); ctx.fill();
     ctx.fillStyle = crown === 3 ? '#fff3b0' : D.dark; circle(0, cy0 - 4, 2.2); ctx.fillStyle = '#5cc8ff'; circle(-6, cy0 - 3, 1.6); circle(6, cy0 - 3, 1.6); }
-  // face: determined brows, bright eyes with lashes, confident smile
-  ctx.fillStyle = '#fff'; ellipse(-4.5, hy - 1, 3.4, 3.8); ellipse(5, hy - 1, 3.4, 3.8);
-  ctx.fillStyle = '#2a1a3a'; circle(-3.6, hy - 0.5, 2.3); circle(5.8, hy - 0.5, 2.3);
-  ctx.fillStyle = '#fff'; circle(-2.6, hy - 1.6, 0.9); circle(6.8, hy - 1.6, 0.9);
-  ctx.strokeStyle = '#2a1a3a'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(-8, hy - 6.5); ctx.lineTo(-2, hy - 7.5); ctx.moveTo(2, hy - 7.5); ctx.lineTo(8.5, hy - 6); ctx.stroke();
-  if (!prince){ ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(-7.5, hy - 3.5); ctx.lineTo(-9, hy - 5); ctx.moveTo(8, hy - 3.5); ctx.lineTo(9.5, hy - 5); ctx.stroke(); }
-  ctx.fillStyle = 'rgba(255,120,160,0.4)'; circle(-8, hy + 4.5, 2.4); circle(8.5, hy + 4.5, 2.4);
-  ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(1, hy + 3.5, 4.2, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
-  // front arm (drawn over body), held item
-  drawArm(fsx, shY + 2, fE[0], fE[1], fH[0], fH[1], skin, punch > 0 || kick > 0);
-  if (o.power && o.power !== 'star' && o.power !== 'bag' && punch <= 0 && kick <= 0){ ctx.save(); ctx.translate(fH[0], fH[1]); drawWeapon(o.power, run ? 0.2 : 0); ctx.restore(); }
-  if (punch > 0){ ctx.strokeStyle = 'rgba(255,243,176,' + (0.8 * punch) + ')'; ctx.lineWidth = 2; ctx.beginPath(); for (var l = -1; l <= 1; l++){ ctx.moveTo(fH[0] + 8, fH[1] + l * 6); ctx.lineTo(fH[0] + 22 + 6 * punch, fH[1] + l * 8); } ctx.stroke(); }
-  if (kick > 0){ ctx.save(); ctx.globalAlpha = 0.7 * kick; ctx.strokeStyle = '#fff3b0'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(10, hipY + 10, 36, -1.1, 0.5); ctx.stroke(); ctx.restore(); }
+  // face
+  var iris = hairC === '#f5d76e' || hairC === '#c9843f' ? '#4a90e2' : hairC === '#d94f3d' ? '#3fa66b' : '#5b3a1e';
+  ctx.fillStyle = '#fff'; ellipse(-4.6, hy - 1, 3.3, 3.9); ellipse(5, hy - 1, 3.3, 3.9);
+  ctx.fillStyle = iris; circle(-3.8, hy - 0.5, 2.4); circle(5.8, hy - 0.5, 2.4);
+  ctx.fillStyle = '#1a1020'; circle(-3.6, hy - 0.4, 1.4); circle(6, hy - 0.4, 1.4);
+  ctx.fillStyle = '#fff'; circle(-2.8, hy - 1.7, 0.9); circle(6.8, hy - 1.7, 0.9);
+  ctx.strokeStyle = prince ? hairC : '#2a1a3a'; ctx.lineWidth = prince ? 2.2 : 1.4; ctx.lineCap = 'round';
+  if (prince){ ctx.beginPath(); ctx.moveTo(-8.5, hy - 6); ctx.lineTo(-1.5, hy - 7); ctx.moveTo(1.5, hy - 7); ctx.lineTo(9, hy - 5.5); ctx.stroke(); }
+  else { ctx.beginPath(); ctx.moveTo(-8, hy - 6); ctx.quadraticCurveTo(-4.5, hy - 8.5, -1.5, hy - 7); ctx.moveTo(1.5, hy - 7); ctx.quadraticCurveTo(5, hy - 8.5, 8.5, hy - 5.8); ctx.stroke();
+    ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(-7.6, hy - 3.6); ctx.lineTo(-9.2, hy - 5.2); ctx.moveTo(8, hy - 3.6); ctx.lineTo(9.6, hy - 5.2); ctx.stroke(); }
+  ctx.strokeStyle = 'rgba(120,70,50,0.55)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(1.5, hy + 1.5); ctx.lineTo(2.6, hy + 3.6); ctx.stroke();
+  if (!prince){ ctx.fillStyle = 'rgba(255,120,160,0.4)'; circle(-8, hy + 4.5, 2.4); circle(8.5, hy + 4.5, 2.4); }
+  if (prince){ ctx.strokeStyle = '#8a4a3a'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(-3, hy + 7); ctx.quadraticCurveTo(1.5, hy + 9.5, 5.5, hy + 6.5); ctx.stroke(); }
+  else { ctx.fillStyle = '#e0526e'; ctx.beginPath(); ctx.arc(1.2, hy + 5.6, 3.6, 0.1 * Math.PI, 0.9 * Math.PI); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#fff'; ctx.fillRect(-1.2, hy + 6, 4.6, 1.3); }
+  // front arm and item
+  drawArm(fsx, shY + 2, fE[0], fE[1], fH[0], fH[1], skin, fighting);
+  if (o.power && o.power !== 'star' && o.power !== 'bag' && !fighting){ ctx.save(); ctx.translate(fH[0], fH[1]); drawWeapon(o.power, run ? 0.2 : 0); ctx.restore(); }
+  if (pq > 0){ ctx.strokeStyle = 'rgba(255,243,176,' + (0.8 * jab) + ')'; ctx.lineWidth = 2; ctx.beginPath(); for (var l = -1; l <= 1; l++){ ctx.moveTo(fH[0] + 8, fH[1] + l * 6); ctx.lineTo(fH[0] + 20 + 8 * jab, fH[1] + l * 8); } ctx.stroke(); }
+  if (kickExt > 0.3){ ctx.save(); ctx.globalAlpha = 0.6 * kickExt; ctx.strokeStyle = '#fff3b0'; ctx.lineWidth = 2; ctx.beginPath(); for (var l2 = -1; l2 <= 1; l2++){ ctx.moveTo(fA[0] + 8, fA[1] + l2 * 6); ctx.lineTo(fA[0] + 22, fA[1] + l2 * 8); } ctx.stroke(); ctx.restore(); }
   ctx.restore();
 }
 
@@ -1375,7 +1419,7 @@ function drawPlayer(){
     ctx.fillStyle = g; circle(0, -40, 72);
   }
   var o = playerLook();
-  o.facing = P.facing; o.run = run; o.inAir = inAir; o.crouch = crouch; o.dance = P.dance; o.p = P.walk; o.punch = P.punch; o.kick = P.kick; o.power = P.power; o.t = t;
+  o.facing = P.facing; o.run = run; o.inAir = inAir; o.crouch = crouch; o.dance = P.dance; o.p = P.walk; o.punch = P.punch; o.kick = P.kick; o.power = P.power; o.t = t; o.guard = P.guard || P.attackCd > 0;
   drawCharacter(o);
   ctx.restore();
 }
@@ -1570,7 +1614,7 @@ function drawHUD(){
     for (i = 0; i < L.gates.length; i++){ var gp = tx + tw * clamp(L.gates[i].x / L.goalX, 0, 1); ctx.fillStyle = L.gates[i].open ? '#8ee3c3' : '#ff8fc8'; circle(gp, ty, 5); }
     ctx.fillStyle = '#7d69c0'; ctx.fillRect(tx + tw - 8, ty - 14, 16, 14); ctx.fillStyle = '#ff6fae'; ctx.beginPath(); ctx.moveTo(tx + tw - 10, ty - 14); ctx.lineTo(tx + tw, ty - 24); ctx.lineTo(tx + tw + 10, ty - 14); ctx.closePath(); ctx.fill();
     var mins = Math.ceil(playLeftMs() / 60000);
-    hudPill(10, 46, 104, function(){ ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(0, 0, 9, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -6); ctx.moveTo(0, 0); ctx.lineTo(4, 2); ctx.stroke(); }, mins + ' min');
+    if (!lock.free) hudPill(10, 46, 104, function(){ ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(0, 0, 9, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -6); ctx.moveTo(0, 0); ctx.lineTo(4, 2); ctx.stroke(); }, mins + ' min');
     ctx.fillStyle = '#ffd23f'; ctx.beginPath(); var hx = tx + tw * prog; ctx.moveTo(hx - 7, ty - 4); ctx.lineTo(hx - 7, ty - 12); ctx.lineTo(hx - 3, ty - 8); ctx.lineTo(hx, ty - 14); ctx.lineTo(hx + 3, ty - 8); ctx.lineTo(hx + 7, ty - 12); ctx.lineTo(hx + 7, ty - 4); ctx.closePath(); ctx.fill();
   }
   if (P.power && S.state === 'play'){
@@ -1742,7 +1786,7 @@ function rollDay(){ if (lock.day !== todayStr()){ lock.day = todayStr(); lock.pl
 function timeLeft(){ return Math.max(0, (lock.until || 0) - Date.now()); }
 function dailyLeftMs(){ rollDay(); return lock.daily ? Math.max(0, lock.daily * 60 - lock.played) * 1000 : 0; }
 function playLeftMs(){ return Math.max(timeLeft(), dailyLeftMs()); }
-function canPlay(){ return !!lock.pin && playLeftMs() > 0; }
+function canPlay(){ return !!lock.free || playLeftMs() > 0; }
 function minutesText(ms){ var m = Math.ceil(ms / 60000); return m + (m === 1 ? ' minute' : ' minutes'); }
 function checkDelayedReset(){
   if (lock.resetAt && Date.now() > lock.resetAt){ lock.pin = null; lock.code = null; lock.resetAt = 0; lock.until = 0; lock.daily = 0; saveLock(); }
@@ -1754,10 +1798,10 @@ function refreshTitle(){
   checkDelayedReset();
   $('titleName').textContent = playerTitle();
   $('treasure').textContent = (total.coins || total.candies) ? ('Treasure chest: ' + total.coins + ' coins and ' + total.candies + ' candies') : 'Your treasure chest is waiting to be filled!';
-  var line = $('lockLine'), btn = $('playBtn');
-  if (!lock.pin){ line.textContent = 'A grown-up needs to open Settings, set a PIN and start the play time.'; btn.hidden = true; }
-  else if (playLeftMs() <= 0){ line.textContent = 'Ask a grown-up to start your play time.'; btn.hidden = true; }
-  else { line.textContent = 'Play time left: ' + minutesText(playLeftMs()); btn.hidden = false; }
+  var line = $('lockLine'), btn = $('playBtn'); btn.hidden = false;
+  if (lock.free) line.textContent = 'Free play is on.';
+  else if (playLeftMs() <= 0) line.textContent = 'Ask a grown-up to start your play time.';
+  else line.textContent = 'Play time left: ' + minutesText(playLeftMs());
   if (isBirthday()){ line.textContent = 'Happy birthday, ' + playerName() + '! ' + line.textContent; }
 }
 function tickLock(dt){
@@ -1765,13 +1809,14 @@ function tickLock(dt){
   rollDay();
   lock.played += dt; playSaveT += dt;
   if (playSaveT > 5){ playSaveT = 0; saveLock(); }
-  if (playLeftMs() < 60000 && !minuteWarned){ minuteWarned = true; banner('One more minute!'); }
+  if (!lock.free && playLeftMs() < 60000 && !minuteWarned){ minuteWarned = true; banner('One more minute!'); }
 }
 function lockGame(){
   if (S.state === 'locked') return;
   lockedFrom = S.state; S.state = 'locked'; clearKeys(); touch = {}; pointers = {}; saveLock();
   $('lockedTitle').textContent = lockedFrom === 'play' ? "Time's up, " + playerName() + '!' : 'Hi ' + playerName() + '!';
   $('lockedMsg').textContent = lockedFrom === 'play' ? 'Great playing! Ask a grown-up if you may play more.' : 'Ask a grown-up to start your play time.';
+  $('grownupsBtn2').textContent = 'Start';
   checkDelayedReset();
   hide('title'); show('locked');
 }
@@ -1803,7 +1848,7 @@ function pinDigit(d){
   if (pinBuf.length === n) setTimeout(pinComplete, 180);
 }
 function pinComplete(){
-  if (pinMode === 'adult'){ if (pinBuf === adult.ans){ pinMode = 'create1'; pinBuf = ''; } else { pinMsg = 'That is not right. Try once more.'; pinBuf = ''; adult = { a: rndi(12, 29), b: rndi(3, 9) }; adult.ans = String(adult.a * adult.b); } }
+  if (pinMode === 'adult'){ if (pinBuf === adult.ans){ showSettingsArea(); return; } else { pinMsg = 'That is not right. Try once more.'; pinBuf = ''; adult = { a: rndi(12, 29), b: rndi(3, 9) }; adult.ans = String(adult.a * adult.b); } }
   else if (pinMode === 'create1'){ pinFirst = pinBuf; pinBuf = ''; pinMode = 'create2'; }
   else if (pinMode === 'create2'){
     if (pinBuf === pinFirst){ lock.pin = pinBuf; lock.resetAt = 0; lock.code = String(rndi(10000000, 99999999)); saveLock(); $('recoveryCode').textContent = lock.code.slice(0, 4) + ' ' + lock.code.slice(4); areas('codeArea'); return; }
@@ -1816,11 +1861,15 @@ function pinComplete(){
 }
 function showSettingsArea(){
   areas('parentSettings'); rollDay();
-  var info = timeLeft() > 0 ? 'Play time given now: ' + minutesText(timeLeft()) + '. ' : '';
-  info += lock.daily ? 'Daily allowance: ' + lock.daily + ' minutes, ' + Math.round(Math.max(0, lock.daily * 60 - lock.played) / 60) + ' left today. ' : 'No daily allowance. ';
+  var info = lock.free ? 'Free play is on: no time limit. ' : (timeLeft() > 0 ? 'Play time given now: ' + minutesText(timeLeft()) + '. ' : '');
+  if (!lock.free) info += lock.daily ? 'Daily allowance: ' + lock.daily + ' minutes, ' + Math.round(Math.max(0, lock.daily * 60 - lock.played) / 60) + ' left today. ' : 'No daily allowance. ';
   info += 'Played today: ' + Math.round(lock.played / 60) + ' minutes.';
   $('timeInfo').textContent = info;
   var dr = $('dailyRow').children; for (var i = 0; i < dr.length; i++) dr[i].classList.toggle('on', parseInt(dr[i].getAttribute('data-daily'), 10) === (lock.daily || 0));
+  $('freeOn').classList.toggle('on', !!lock.free); $('freeOff').classList.toggle('on', !lock.free);
+  $('changePinBtn').textContent = lock.pin ? 'Change PIN' : 'Set a PIN';
+  $('removePinBtn').hidden = !lock.pin;
+  $('pinNote').textContent = lock.pin ? 'A PIN protects this screen.' : 'No PIN set: this screen is protected only by the sum question. Set a PIN for stronger protection.';
 }
 function grant(min){ lock.until = Math.max(Date.now(), lock.until || 0) + min * 60000; saveLock(); hide('parent'); afterParent(); }
 function afterParent(){ if (S.state === 'locked' && canPlay()) unlockGame(); else if (S.state === 'title') refreshTitle(); }
@@ -1843,13 +1892,17 @@ function codeComplete(){
 }
 $('grantRow').addEventListener('click', function(e){ var m = e.target.getAttribute('data-min'); if (m) grant(parseInt(m, 10)); });
 $('dailyRow').addEventListener('click', function(e){ var d = e.target.getAttribute('data-daily'); if (d != null){ lock.daily = parseInt(d, 10); saveLock(); showSettingsArea(); } });
-$('lockNowBtn').addEventListener('click', function(){ lock.until = 0; lock.daily = 0; saveLock(); hide('parent'); hide('settings'); lockGame(); });
+$('lockNowBtn').addEventListener('click', function(){ lock.until = 0; lock.daily = 0; lock.free = false; saveLock(); hide('parent'); hide('settings'); lockGame(); });
+$('freeOn').addEventListener('click', function(){ lock.free = true; saveLock(); showSettingsArea(); });
+$('freeOff').addEventListener('click', function(){ lock.free = false; saveLock(); showSettingsArea(); });
+$('removePinBtn').addEventListener('click', function(){ lock.pin = null; lock.code = null; saveLock(); showSettingsArea(); });
 $('changePinBtn').addEventListener('click', function(){ pinBuf = ''; pinMsg = ''; pinMode = 'create1'; areas('pinArea'); $('forgotBtn').hidden = true; renderPin(); });
 $('codeSaved').addEventListener('click', function(){ showSettingsArea(); });
 $('forgotBtn').addEventListener('click', function(){ codeBuf = ''; renderCode(); areas('forgotArea'); });
 $('forgotBack').addEventListener('click', function(){ areas('pinArea'); renderPin(); });
 $('delayReset').addEventListener('click', function(){ lock.resetAt = Date.now() + 24 * 3600000; saveLock(); hide('parent'); checkDelayedReset(); afterParent(); });
 $('parentClose').addEventListener('click', function(){ hide('parent'); afterParent(); });
+$('startLocked').addEventListener('click', openParent);
 $('grownupsBtn').addEventListener('click', openParent);
 $('grownupsBtn2').addEventListener('click', openParent);
 $('grownupsBtn3').addEventListener('click', function(){ hide('settings'); openParent(); });
@@ -1861,13 +1914,12 @@ function openSettings(){
 }
 function closeSettings(){ hide('settings'); if (pausedFrom === 'play' && S.state === 'paused'){ S.state = 'play'; prevJumpHeld = true; prevAttack = true; } pausedFrom = null; if (S.state === 'title') refreshTitle(); }
 function renderSettings(){
-  $('musicOn').classList.toggle('on', settings.music); $('musicOff').classList.toggle('on', !settings.music);
+  var mr = $('musicRow').children; for (var i = 0; i < mr.length; i++){ var tn = mr[i].getAttribute('data-tune'); mr[i].classList.toggle('on', tn === 'off' ? !settings.music : (settings.music && settings.tune === tn)); }
   $('soundOn').classList.toggle('on', settings.sound); $('soundOff').classList.toggle('on', !settings.sound);
   $('speakOn').classList.toggle('on', settings.speak); $('speakOff').classList.toggle('on', !settings.speak);
 }
 function setOpt(key, val){ settings[key] = val; saveSettings(); renderSettings(); if (key === 'sound' && val) sfx.coin(); }
-$('musicOn').addEventListener('click', function(){ setOpt('music', true); audioOn(); });
-$('musicOff').addEventListener('click', function(){ setOpt('music', false); });
+$('musicRow').addEventListener('click', function(e){ var tn = e.target.getAttribute('data-tune'); if (!tn) return; if (tn === 'off'){ setOpt('music', false); } else { settings.tune = tn; setOpt('music', true); audioOn(); if (AC && music.running){ music.step = 0; } } });
 $('soundOn').addEventListener('click', function(){ setOpt('sound', true); });
 $('soundOff').addEventListener('click', function(){ setOpt('sound', false); });
 $('speakOn').addEventListener('click', function(){ setOpt('speak', true); say('Hello ' + playerName() + '!'); });
@@ -1954,6 +2006,7 @@ window.addEventListener('blur', function(){ pointers = {}; touch = {}; clearKeys
 document.addEventListener('visibilitychange', function(){ if (document.hidden){ pointers = {}; touch = {}; clearKeys(); } });
 
 $('playBtn').addEventListener('click', function(){ audioOn(); if (!canPlay()){ openParent(); return; } S.level = 1; S.coins = 0; S.candies = 0; startLevel(); });
+$('grownupsBtn2').textContent = 'Start';
 $('nextBtn').addEventListener('click', function(){ audioOn(); S.level++; startLevel(); });
 $('retryBtn').addEventListener('click', function(){ audioOn(); startLevel(); });
 $('quizSpeak').addEventListener('click', function(){ if (quiz.q) say(quiz.q.q); });
@@ -2018,7 +2071,7 @@ if (window.speechSynthesis && speechSynthesis.getVoices) speechSynthesis.getVoic
 window.__PPC = { S: S, P: P, step: function(dt, n){ for (var i = 0; i < (n || 1); i++) update(dt || 1 / 60); draw(); }, keys: keys,
   get L(){ return L; }, get monsters(){ return monsters; }, get pickups(){ return pickups; }, get bolts(){ return bolts; }, get camX(){ return camX; }, get lock(){ return lock; }, get quiz(){ return quiz; },
   get profile(){ return profile; }, set profile(v){ profile = v; saveProfile(); },
-  startLevel: startLevel, startWin: startWin, spawnBolt: spawnBolt, collect: collect, grant: grant, lockGame: lockGame, openParent: openParent, openQuiz: openQuiz, answerQuiz: answerQuiz, closeQuiz: closeQuiz, makeQuestion: makeQuestion, tierForAge: tierForAge, TIERS: TIERS, karate: karate, refreshTitle: refreshTitle, set touch(v){ touch = v; } };
+  startLevel: startLevel, startWin: startWin, spawnBolt: spawnBolt, collect: collect, grant: grant, lockGame: lockGame, openParent: openParent, openQuiz: openQuiz, answerQuiz: answerQuiz, closeQuiz: closeQuiz, makeQuestion: makeQuestion, tierForAge: tierForAge, TIERS: TIERS, karate: karate, refreshTitle: refreshTitle, set touch(v){ touch = v; }, portrait: function(c2, o){ var saved = ctx; ctx = c2; try { drawCharacter(o); } finally { ctx = saved; } }, makeMonster: makeMonster, drawMonsterTo: function(c2, m){ var saved = ctx; ctx = c2; try { drawMonster(m); } finally { ctx = saved; } } };
 })();
 
 </script>
