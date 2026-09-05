@@ -99,9 +99,12 @@
   .sw { position:relative; width:46px; height:46px; border-radius:50%; border:3px solid rgba(255,255,255,0.4); cursor:pointer; pointer-events:auto; flex:0 0 auto; margin-bottom:14px; color:#fff; }
   .sw.on { border-color:#ffd23f; box-shadow:0 0 0 3px rgba(255,210,63,0.55); }
   .sw.locked { opacity:0.8; }
+  .sw.thumb { width:64px; height:64px; background:rgba(0,0,0,0.25); }
+  .sw.thumb canvas { width:64px; height:64px; display:block; border-radius:50%; }
+  .swbreak { flex-basis:100%; height:0; margin:-6px 0 0; }
   .sw .swlab { position:absolute; top:100%; left:50%; transform:translateX(-50%); font-size:11px; white-space:nowrap; color:#fff; margin-top:2px; text-shadow:0 1px 2px rgba(0,0,0,0.6); }
   .sw .price { position:absolute; top:-9px; right:-10px; background:#ffd23f; color:#5a1d3f; font-size:11px; font-weight:700; border-radius:9px; padding:1px 6px; line-height:14px; }
-  @media (max-width: 560px){ .dress { flex-direction:column; align-items:center; } .dress .preview { width:140px; height:117px; } }
+  @media (max-width: 560px){ .dress { flex-direction:column; align-items:center; } .dress .preview { width:150px; height:150px; } }
   .shoprow { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.12); font-size:clamp(14px,2.4vw,18px); }
   .shopleft { display:flex; align-items:center; gap:10px; }
   .shopsw { width:26px; height:26px; border-radius:50%; border:2px solid rgba(255,255,255,0.5); flex:none; display:inline-block; }
@@ -141,7 +144,7 @@
     </div>
     <div id="setupStep3" hidden>
       <h2>Pick your look</h2>
-      <canvas id="preview" class="preview" width="180" height="150"></canvas>
+      <canvas id="preview" class="preview" width="200" height="190"></canvas>
       <p class="small">Skin</p><div class="swatches" id="skinSw"></div>
       <p class="small">Hair colour</p><div class="swatches" id="hairSw"></div>
       <p class="small">Hair style</p><div class="row" id="styleRow"></div>
@@ -160,7 +163,7 @@
   <div class="panel" style="min-width:min(94vw,600px)">
     <h2>Dress-up Room</h2>
     <div class="dress">
-      <canvas id="shopPreview" class="preview" width="180" height="150"></canvas>
+      <canvas id="shopPreview" class="preview" width="200" height="200"></canvas>
       <div class="dressright">
         <p class="small" id="shopCoins"></p>
         <div class="row tabs" id="shopTabs"><button data-tab="dress">Dress</button><button data-tab="hair">Hair</button><button data-tab="eyes">Eyes</button><button data-tab="crown">Crown</button><button data-tab="shoes">Shoes</button><button data-tab="skin">Skin</button><button data-tab="hearts">Hearts</button></div>
@@ -731,6 +734,7 @@ var HAIR_PRICE = [0, 0, 0, 0, 0, 25, 25, 25, 25];
 var EYES = [['Dark', '#2a1a3a', 0], ['Brown', '#6b3a1e', 0], ['Blue', '#2f7fd6', 20], ['Green', '#2f9e5b', 20], ['Hazel', '#9a7b2f', 20], ['Violet', '#7a4fd6', 30]];
 var SHOES = [['Match the dress', null, 0], ['Red', '#e53935', 15], ['Pink', '#ff6fae', 15], ['Blue', '#1e88e5', 15], ['White', '#fafafa', 15], ['Gold', '#ffd23f', 25], ['Purple', '#8e24aa', 25]];
 var SKIN_NAMES = ['Light', 'Tan', 'Brown', 'Deep'];
+var HAIR_STYLES = { princess: ['Long', 'Ponytail', 'Pigtails', 'Bun', 'Bob', 'Curly'], prince: ['Neat', 'Spiky', 'Curly', 'Swoop', 'Long'] };
 var THEMES = [
   { name: 'night', top: '#070620', mid: '#2a1a55', bot: '#4a2a78', stars: true, moon: true, hills: ['#1e1447', '#2a1c5e'], tree: '#231652', grass: '#2f6b3a', grassTop: '#3f8a4c', dirt: '#3b2b45', cloud: 'rgba(95,65,150,0.75)', water: '#1b2a5a', dark: true },
   { name: 'day', top: '#4fb8ff', mid: '#8fd3ff', bot: '#d9f1ff', sun: [180, 90], hills: ['#5aa86a', '#7cc47f'], tree: '#3f8a4c', grass: '#58b368', grassTop: '#86d98e', dirt: '#8a5a3a', cloud: 'rgba(255,255,255,0.92)', water: '#3d8fd4' },
@@ -1828,15 +1832,31 @@ function drawCharacter(o){
   }
   ctx.fillStyle = skin; ctx.fillRect(-4, hy + 14, 8, 8);
   ctx.fillStyle = hairC;
-  if (prince){ outlined(function(){ ctx.beginPath(); ctx.arc(0, hy - 2, 20, 0, TAU); }, hairC); }
-  else if (o.style === 1){ outlined(function(){ ctx.beginPath(); ctx.ellipse(0, hy - 2, 20, 21, 0, 0, TAU); }, hairC); outlined(function(){ ctx.beginPath(); ctx.ellipse(-19 - run * 6, hy + 14 + Math.sin(t * 10) * run * 2, 7, 18, 0, 0, TAU); }, hairC); ctx.fillStyle = hairC; circle(-14, hy - 12, 6); }
+  var st = o.style || 0, sway = Math.sin(t * 10) * run * 2;
+  if (prince){
+    outlined(function(){ ctx.beginPath(); ctx.arc(0, hy - 2, 20, 0, TAU); }, hairC);
+    if (st === 4){ outlined(function(){ ctx.beginPath(); ctx.moveTo(-19, hy - 4); ctx.quadraticCurveTo(-25, hy + 8, -19, hy + 20); ctx.quadraticCurveTo(-13, hy + 18, -13, hy + 4); ctx.closePath(); }, hairC); outlined(function(){ ctx.beginPath(); ctx.moveTo(19, hy - 4); ctx.quadraticCurveTo(25, hy + 8, 19, hy + 20); ctx.quadraticCurveTo(13, hy + 18, 13, hy + 4); ctx.closePath(); }, hairC); }
+    if (st === 2){ for (var cq = 0; cq < 7; cq++){ var ca = Math.PI + cq * Math.PI / 6; outlined(function(){ ctx.beginPath(); ctx.arc(Math.cos(ca) * 18, hy - 2 + Math.sin(ca) * 19, 5.5, 0, TAU); }, hairC); } }
+  }
+  else if (st === 1){ outlined(function(){ ctx.beginPath(); ctx.ellipse(0, hy - 2, 20, 21, 0, 0, TAU); }, hairC); outlined(function(){ ctx.beginPath(); ctx.ellipse(-19 - run * 6, hy + 14 + sway, 7, 18, 0, 0, TAU); }, hairC); ctx.fillStyle = hairC; circle(-14, hy - 12, 6); }
+  else if (st === 2){ outlined(function(){ ctx.beginPath(); ctx.ellipse(0, hy - 2, 20, 21, 0, 0, TAU); }, hairC);
+    outlined(function(){ ctx.beginPath(); ctx.ellipse(-23 - run * 3, hy + 14 + sway, 7, 15, 0.15, 0, TAU); }, hairC); outlined(function(){ ctx.beginPath(); ctx.ellipse(23 - run * 2, hy + 14 - sway, 7, 15, -0.15, 0, TAU); }, hairC);
+    ctx.fillStyle = '#ff5c8a'; circle(-20, hy + 1, 3.6); circle(20, hy + 1, 3.6); }
+  else if (st === 3){ outlined(function(){ ctx.beginPath(); ctx.ellipse(0, hy - 2, 20, 21, 0, 0, TAU); }, hairC); outlined(function(){ ctx.beginPath(); ctx.arc(-15, hy - 19, 8.5, 0, TAU); }, hairC);
+    ctx.fillStyle = '#ff5c8a'; ctx.beginPath(); ctx.moveTo(-15, hy - 13); ctx.lineTo(-23, hy - 17); ctx.lineTo(-21, hy - 9); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(-15, hy - 13); ctx.lineTo(-7, hy - 17); ctx.lineTo(-9, hy - 9); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#ffd23f'; circle(-15, hy - 13, 2); }
+  else if (st === 4){ outlined(function(){ ctx.beginPath(); ctx.ellipse(0, hy - 2, 20, 21, 0, 0, TAU); }, hairC); outlined(function(){ ctx.beginPath(); ctx.moveTo(-19, hy - 4); ctx.quadraticCurveTo(-26, hy + 10, -17, hy + 22); ctx.quadraticCurveTo(-11, hy + 20, -12, hy + 6); ctx.closePath(); }, hairC); outlined(function(){ ctx.beginPath(); ctx.moveTo(19, hy - 4); ctx.quadraticCurveTo(26, hy + 10, 17, hy + 22); ctx.quadraticCurveTo(11, hy + 20, 12, hy + 6); ctx.closePath(); }, hairC); }
+  else if (st === 5){ outlined(function(){ ctx.beginPath(); ctx.ellipse(0, hy + 2, 22, 24, 0, 0, TAU); }, hairC);
+    for (var cq2 = 0; cq2 < 9; cq2++){ var ca2 = Math.PI * 0.05 + cq2 * Math.PI * 0.9 / 8; outlined(function(){ ctx.beginPath(); ctx.arc(Math.cos(ca2) * 21, hy + 2 + Math.sin(ca2) * 24, 5.5, 0, TAU); }, hairC); } }
   else { outlined(function(){ ctx.beginPath(); ctx.ellipse(0, hy - 2, 20, 21, 0, 0, TAU); }, hairC);
     outlined(function(){ ctx.beginPath(); ctx.moveTo(-18, hy); ctx.quadraticCurveTo(-27 - run * 4, hy + 18, -20, hy + 38); ctx.quadraticCurveTo(-13, hy + 34, -12, hy + 8); ctx.closePath(); }, hairC);
     outlined(function(){ ctx.beginPath(); ctx.moveTo(18, hy); ctx.quadraticCurveTo(26 - run * 2, hy + 18, 19, hy + 36); ctx.quadraticCurveTo(13, hy + 32, 12, hy + 8); ctx.closePath(); }, hairC); }
   if (prince){ ctx.fillStyle = skin; circle(-17, hy + 2, 3.5); circle(17, hy + 2, 3.5); }
   outlined(function(){ ctx.beginPath(); ctx.arc(0, hy, 18, 0, TAU); }, skin);
   ctx.fillStyle = hairC;
-  if (prince){ ctx.beginPath(); ctx.arc(0, hy - 1, 18.5, Math.PI * 1.02, Math.PI * 1.98); ctx.lineTo(13, hy - 9); ctx.lineTo(4, hy - 12); ctx.lineTo(-6, hy - 8); ctx.lineTo(-13, hy - 10); ctx.closePath(); ctx.fill();
+  if (prince){
+    if (st === 3){ ctx.beginPath(); ctx.arc(0, hy - 1, 18.5, Math.PI * 1.02, Math.PI * 1.98); ctx.lineTo(17, hy - 2); ctx.quadraticCurveTo(4, hy - 17, -14, hy - 5); ctx.closePath(); ctx.fill(); }
+    else { ctx.beginPath(); ctx.arc(0, hy - 1, 18.5, Math.PI * 1.02, Math.PI * 1.98); ctx.lineTo(13, hy - 9); ctx.lineTo(4, hy - 12); ctx.lineTo(-6, hy - 8); ctx.lineTo(-13, hy - 10); ctx.closePath(); ctx.fill(); }
+    if (st === 2){ [-14, -5, 5, 14].forEach(function(cx2, ci){ circle(cx2, hy - (ci === 1 || ci === 2 ? 19 : 14), 5.5); }); }
     if (o.style === 1){ for (var sp = -2; sp <= 2; sp++){ ctx.beginPath(); ctx.moveTo(sp * 7 - 4, hy - 15); ctx.lineTo(sp * 7 + 1 - run * 3, hy - 27); ctx.lineTo(sp * 7 + 4, hy - 15); ctx.closePath(); ctx.fill(); } } }
   else { ctx.beginPath(); ctx.moveTo(-18.5, hy - 1); ctx.quadraticCurveTo(-18.5, hy - 20, 0, hy - 20); ctx.quadraticCurveTo(18.5, hy - 20, 18.5, hy - 1); ctx.quadraticCurveTo(16, hy - 10, 10, hy - 8); ctx.quadraticCurveTo(5, hy - 13, 0, hy - 8); ctx.quadraticCurveTo(-6, hy - 13, -12, hy - 7); ctx.quadraticCurveTo(-16, hy - 9, -18.5, hy - 1); ctx.closePath(); ctx.fill();
     ctx.strokeStyle = 'rgba(255,255,255,0.28)'; ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(0, hy - 3, 14, Math.PI * 1.2, Math.PI * 1.55); ctx.stroke(); }
@@ -2554,10 +2574,26 @@ function renderLook(){
   var sk = $('skinSw'); sk.innerHTML = ''; SKINS.forEach(function(c, i){ var d = document.createElement('div'); d.className = 'swatch' + (draft.skin === i ? ' on' : ''); d.style.background = c; d.addEventListener('click', function(){ draft.skin = i; renderLook(); }); sk.appendChild(d); });
   var hs = $('hairSw'); hs.innerHTML = ''; HAIRS.forEach(function(c, i){ if (HAIR_PRICE[i] > 0) return; var d = document.createElement('div'); d.className = 'swatch' + (draft.hair === i ? ' on' : ''); d.style.background = c; d.addEventListener('click', function(){ draft.hair = i; renderLook(); }); hs.appendChild(d); });
   var sr = $('styleRow'); sr.innerHTML = '';
-  (draft.gender === 'prince' ? ['Neat', 'Spiky'] : ['Long', 'Ponytail']).forEach(function(n, i){ var b = document.createElement('button'); b.textContent = n; b.className = draft.style === i ? 'on' : ''; b.addEventListener('click', function(){ draft.style = i; renderLook(); }); sr.appendChild(b); });
+  HAIR_STYLES[draft.gender === 'prince' ? 'prince' : 'princess'].forEach(function(n, i){ var b = document.createElement('button'); b.textContent = n; b.className = draft.style === i ? 'on' : ''; b.addEventListener('click', function(){ draft.style = i; renderLook(); }); sr.appendChild(b); });
   drawPreview();
 }
+function turntable(cv, look){
+  var w = cv.width, h = cv.height, ang = S.time * 1.1, cs = Math.cos(ang), fx = Math.max(0.14, Math.abs(cs));
+  ctx.clearRect(0, 0, w, h);
+  var g2 = ctx.createRadialGradient(w / 2, h - 14, 4, w / 2, h - 14, w * 0.36); g2.addColorStop(0, 'rgba(255,224,150,0.55)'); g2.addColorStop(1, 'rgba(255,224,150,0)'); ctx.fillStyle = g2; ctx.beginPath(); ctx.ellipse(w / 2, h - 14, w * 0.36, w * 0.11, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.beginPath(); ctx.ellipse(w / 2, h - 12, w * 0.26, w * 0.07, 0, 0, TAU); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(w / 2, h - 12, w * 0.26, w * 0.07, 0, 0, TAU); ctx.stroke();
+  ctx.save(); ctx.translate(w / 2, h - 14); ctx.scale(fx * (h / 150), h / 150);
+  look.facing = cs >= 0 ? 1 : -1; look.run = 0; look.inAir = false; look.crouch = false; look.dance = false; look.p = 0; look.punch = 0; look.kick = 0; look.power = null; look.t = S.time; look.guard = false;
+  drawCharacter(look);
+  ctx.restore();
+}
 function drawPreview(){
+  var saved = ctx; ctx = previewCtx;
+  turntable($('preview'), { gender: draft.gender, skin: SKINS[draft.skin], hair: HAIRS[draft.hair], style: draft.style, outfit: OUTFITS[typeof draft.wear === 'number' ? draft.wear : 0], crown: draft.crown || 0, eye: EYES[draft.eye || 0][1], shoe: SHOES[draft.shoe || 0][1] });
+  ctx = saved;
+}
+function drawPreviewOld(){
   var saved = ctx; ctx = previewCtx; ctx.clearRect(0, 0, 180, 150);
   ctx.save(); ctx.translate(90, 138);
   drawCharacter({ gender: draft.gender, skin: SKINS[draft.skin], hair: HAIRS[draft.hair], style: draft.style, outfit: OUTFITS[typeof draft.wear === 'number' ? draft.wear : 0], crown: draft.crown || 0, eye: EYES[draft.eye || 0][1], shoe: SHOES[draft.shoe || 0][1], facing: 1, run: 0, inAir: false, crouch: false, dance: false, p: 0, punch: 0, kick: 0, power: null, t: S.time });
@@ -2646,9 +2682,12 @@ function shopRow(label, sub, price, owned, wearing, onBuy, onWear, swatch){
 }
 var shopTab = 'dress', shopCtx = $('shopPreview').getContext('2d'), shopMsg = '';
 function drawShopPreview(){
-  var saved = ctx; ctx = shopCtx; ctx.clearRect(0, 0, 180, 150);
-  ctx.save(); ctx.translate(90, 138);
-  var lk = playerLook(); lk.facing = 1; lk.run = 0; lk.inAir = false; lk.crouch = false; lk.dance = true; lk.p = 0; lk.punch = 0; lk.kick = 0; lk.power = null; lk.t = S.time;
+  var saved = ctx; ctx = shopCtx; turntable($('shopPreview'), playerLook()); ctx = saved;
+}
+function styleThumb(cv, styleIdx){
+  var c2 = cv.getContext('2d'), saved = ctx; ctx = c2; ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.save(); ctx.translate(cv.width / 2, cv.height + 50); ctx.scale(1.6, 1.6);
+  var lk = playerLook(); lk.style = styleIdx; lk.facing = 1; lk.run = 0; lk.inAir = false; lk.crouch = false; lk.dance = false; lk.p = 0; lk.punch = 0; lk.kick = 0; lk.power = null; lk.t = 0; lk.guard = false;
   drawCharacter(lk);
   ctx.restore(); ctx = saved;
 }
@@ -2656,7 +2695,7 @@ function swatch(box, o){
   // o: { color, label, price, owned, on, gradient, onPick }
   var d = document.createElement('div'); d.className = 'sw' + (o.on ? ' on' : '') + (o.owned ? '' : ' locked'); d.title = o.label;
   d.style.background = o.gradient || o.color || 'rgba(255,255,255,0.15)';
-  if (o.emoji){ d.textContent = o.emoji; d.style.fontSize = '24px'; d.style.display = 'flex'; d.style.alignItems = 'center'; d.style.justifyContent = 'center'; }
+  if (o.thumb != null){ d.className += ' thumb'; var tc = document.createElement('canvas'); tc.width = 64; tc.height = 64; d.appendChild(tc); styleThumb(tc, o.thumb); }
   var lab = document.createElement('span'); lab.className = 'swlab'; lab.textContent = o.label; d.appendChild(lab);
   if (!o.owned){ var pr = document.createElement('span'); pr.className = 'price'; pr.textContent = o.price; d.appendChild(pr); }
   d.addEventListener('click', function(){
@@ -2677,8 +2716,9 @@ function renderShop(){
     swatch(box, { gradient: 'linear-gradient(135deg,#ff6fae,#ffd23f,#5fd6b0,#5cb8ff,#b48cff)', label: 'Surprise', price: 0, owned: true, on: profile.wear === 'level', onPick: function(){ profile.wear = 'level'; } });
     OUTFITS.forEach(function(o, i){ swatch(box, { color: o.dress, label: o.name.charAt(0).toUpperCase() + o.name.slice(1), price: 30 + i * 5, owned: profile.owned.indexOf(i) >= 0, on: profile.wear === i, onBuy: function(){ profile.owned.push(i); }, onPick: function(){ profile.wear = i; } }); });
   } else if (shopTab === 'hair'){
-    var styles = isPrince() ? ['Neat', 'Spiky'] : ['Long', 'Ponytail'];
-    styles.forEach(function(n, i){ swatch(box, { emoji: i === 0 ? '\uD83D\uDC69' : '\uD83D\uDC67', label: n, price: 0, owned: true, on: (profile.style || 0) === i, onPick: function(){ profile.style = i; } }); });
+    var styles = HAIR_STYLES[isPrince() ? 'prince' : 'princess'];
+    styles.forEach(function(n, i){ swatch(box, { thumb: i, label: n, price: 0, owned: true, on: (profile.style || 0) === i, onPick: function(){ profile.style = i; } }); });
+    var br = document.createElement('div'); br.className = 'swbreak'; box.appendChild(br);
     HAIRS.forEach(function(c, i){ swatch(box, { color: c, label: HAIR_NAMES[i], price: HAIR_PRICE[i], owned: profile.ownedHair.indexOf(i) >= 0, on: (profile.hair == null ? 1 : profile.hair) === i, onBuy: function(){ profile.ownedHair.push(i); }, onPick: function(){ profile.hair = i; } }); });
   } else if (shopTab === 'eyes'){
     EYES.forEach(function(e, i){ swatch(box, { gradient: 'radial-gradient(circle at 50% 50%, #1a1024 0 22%, ' + e[1] + ' 24% 60%, #fff 62%)', label: e[0], price: e[2], owned: profile.ownedEye.indexOf(i) >= 0, on: (profile.eye || 0) === i, onBuy: function(){ profile.ownedEye.push(i); }, onPick: function(){ profile.eye = i; } }); });
@@ -2706,6 +2746,7 @@ function frame(now){
   var dt = Math.min(0.05, (now - last) / 1000); last = now;
   update(dt); draw();
   if (S.state === 'shop' && !$('shop').hidden) drawShopPreview();
+  if (!$('setup').hidden && !$('setupStep3').hidden && draft) drawPreview();
   requestAnimationFrame(frame);
 }
 function showTitle(){
