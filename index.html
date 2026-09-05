@@ -82,6 +82,7 @@
   #parent .small { margin:4px 0; }
   .report b { color:#ffd23f; font-weight:700; }
   #winPet { font-size:clamp(17px,3vw,23px); }
+  #winPet .bigpet { font-size:clamp(44px,8vw,64px); line-height:1.1; display:inline-block; }
   .notice { background:rgba(255,92,138,0.25); border:2px solid #ff8fc8; border-radius:14px; padding:6px 12px; margin:8px 0; font-size:clamp(12px,2.2vw,16px); }
   .mcanvas { display:block; margin:0 auto 4px; }
   .shop { text-align:left; max-height:52vh; overflow:auto; }
@@ -153,6 +154,8 @@
     <div class="setting"><span>Music</span><div class="row" id="musicRow"><button data-tune="off">Off</button><button data-tune="lullaby">Lullaby</button><button data-tune="meadow">Meadow</button><button data-tune="night">Starry Night</button><button data-tune="adventure">Adventure</button></div></div>
     <div class="setting"><span>Sounds</span><div class="row"><button id="soundOn">On</button><button id="soundOff">Off</button></div></div>
     <div class="setting"><span>Read questions aloud</span><div class="row"><button id="speakOn">On</button><button id="speakOff">Off</button></div></div>
+    <div class="setting"><span>Language</span><div class="row" id="langRow"><button data-lang="en">English</button><button data-lang="hi">हिंदी</button><button data-lang="mr">मराठी</button></div></div>
+    <p class="small" id="langNote"></p>
     <div class="setting"><span>Character</span><div class="row"><button id="changeChar">Change</button></div></div>
     <div class="setting"><span>Grown-ups</span><div class="row"><button id="grownupsBtn3">Open</button></div></div>
     <div class="row"><button id="howBtn">How to play</button></div>
@@ -381,6 +384,7 @@ function save(key, val){ try { localStorage.setItem(key, JSON.stringify(val)); }
 var settings = load('ppc-settings', { music: true, sound: true, speak: true, tune: 'lullaby' });
 if (!settings.tune) settings.tune = 'lullaby';
 if (!settings.qmode) settings.qmode = 'auto';
+if (!settings.lang) settings.lang = 'en';
 if (!settings.diff) settings.diff = 'normal';
 function diffMul(){ return settings.diff === 'gentle' ? 0.8 : settings.diff === 'brave' ? 1.2 : 1; }
 function gentle(){ return settings.diff === 'gentle'; }
@@ -568,20 +572,95 @@ document.addEventListener('visibilitychange', function(){ try { if (AC){ if (doc
 window.addEventListener('pagehide', function(){ try { if (AC) AC.suspend(); } catch (e) {} });
 
 /* ---------- speech ---------- */
-function say(text){
+/* ---------- languages: spoken lines and question text (UI stays English) ---------- */
+var NAMES = {
+  hi: { cat: 'बिल्ली', dog: 'कुत्ता', rabbit: 'खरगोश', frog: 'मेंढक', lion: 'शेर', cow: 'गाय', pig: 'सुअर', monkey: 'बंदर', bear: 'भालू', fish: 'मछली', elephant: 'हाथी', duck: 'बत्तख',
+        apple: 'सेब', banana: 'केला', grapes: 'अंगूर', strawberry: 'स्ट्रॉबेरी', orange: 'संतरा', watermelon: 'तरबूज', pear: 'नाशपाती', cherry: 'चेरी',
+        ball: 'गेंद', car: 'कार', house: 'घर', flower: 'फूल', star: 'तारा', sun: 'सूरज', moon: 'चाँद', tree: 'पेड़', cake: 'केक', book: 'किताब', hat: 'टोपी', umbrella: 'छतरी', bus: 'बस', boat: 'नाव',
+        red: 'लाल', blue: 'नीला', green: 'हरा', yellow: 'पीला', purple: 'बैंगनी', pink: 'गुलाबी', white: 'सफ़ेद', black: 'काला', brown: 'भूरा',
+        circle: 'गोला', square: 'चौकोर', triangle: 'त्रिकोण', heart: 'दिल', diamond: 'हीरा',
+        stars: 'तारे', apples: 'सेब', balloons: 'गुब्बारे', flowers: 'फूल', cupcakes: 'कपकेक', lollipops: 'लॉलीपॉप', strawberries: 'स्ट्रॉबेरी',
+        'the big one': 'बड़ा वाला', 'the small one': 'छोटा वाला' },
+  mr: { cat: 'मांजर', dog: 'कुत्रा', rabbit: 'ससा', frog: 'बेडूक', lion: 'सिंह', cow: 'गाय', pig: 'डुक्कर', monkey: 'माकड', bear: 'अस्वल', fish: 'मासा', elephant: 'हत्ती', duck: 'बदक',
+        apple: 'सफरचंद', banana: 'केळं', grapes: 'द्राक्षं', strawberry: 'स्ट्रॉबेरी', orange: 'संत्रं', watermelon: 'कलिंगड', pear: 'पेर', cherry: 'चेरी',
+        ball: 'चेंडू', car: 'गाडी', house: 'घर', flower: 'फूल', star: 'चांदणी', sun: 'सूर्य', moon: 'चंद्र', tree: 'झाड', cake: 'केक', book: 'पुस्तक', hat: 'टोपी', umbrella: 'छत्री', bus: 'बस', boat: 'होडी',
+        red: 'लाल', blue: 'निळा', green: 'हिरवा', yellow: 'पिवळा', purple: 'जांभळा', pink: 'गुलाबी', white: 'पांढरा', black: 'काळा', brown: 'तपकिरी',
+        circle: 'वर्तुळ', square: 'चौकोन', triangle: 'त्रिकोण', heart: 'हृदय', diamond: 'हिरा',
+        stars: 'चांदण्या', apples: 'सफरचंद', balloons: 'फुगे', flowers: 'फुलं', cupcakes: 'कपकेक', lollipops: 'लॉलीपॉप', strawberries: 'स्ट्रॉबेरी',
+        'the big one': 'मोठा', 'the small one': 'लहान' }
+};
+NAMES.hi.orangeColor = 'नारंगी'; NAMES.mr.orangeColor = 'केशरी';
+var PHRASES = {
+  en: { hello: ['Hello!'], intro1: ['Oh no! The Grumpy King took all the candies! Come on, let us get them back!'], levelN: ['Level N! Here we go!'],
+        gate: ['Got you! Question time!', 'Ooh, a puzzle for you!', 'Ready? Here we go!', 'Caught you! One little question first!'],
+        revive: ['Oh dear! Answer this and you get a heart!', 'No worries! Answer this for a new heart.'],
+        praise: ['Yay! You did it!', 'Whoo hoo! Super smart!', 'Yes! High five!', 'That is it! Brilliant!', 'Wow! You are amazing!', 'Hooray! Off you go!'],
+        wrong: ['Hmm, not that one. Try again!', 'Oopsie! Have another look.', 'Almost! One more try!'],
+        help: ['Let me help! It is X. Tap the glowing one!'],
+        door: ['The door is open! Someone is waiting for you!'],
+        win: ['Hooray! You did it! And look, a little friend was hiding in the castle!'] },
+  hi: { hello: ['नमस्ते!'], intro1: ['अरे नहीं! गुस्सैल राजा सारी टॉफ़ियाँ ले गया! चलो, वापस लाते हैं!'], levelN: ['लेवल N! चलो शुरू करें!'],
+        gate: ['पकड़ लिया! सवाल का समय!', 'एक छोटा सा सवाल!', 'तैयार? चलो!'],
+        revive: ['कोई बात नहीं! इसका जवाब दो और एक दिल पाओ!'],
+        praise: ['वाह! बहुत बढ़िया!', 'शाबाश! तुम तो बहुत होशियार हो!', 'सही जवाब! हाई फाइव!', 'कमाल कर दिया!'],
+        wrong: ['हम्म, वो नहीं। फिर से कोशिश करो!', 'ओहो! एक बार और देखो।'],
+        help: ['मैं मदद करती हूँ! जवाब है X। चमकते वाले को छुओ!'],
+        door: ['दरवाज़ा खुल गया! कोई तुम्हारा इंतज़ार कर रहा है!'],
+        win: ['हुर्रे! तुमने कर दिखाया! देखो, एक छोटा सा दोस्त महल में छुपा था!'] },
+  mr: { hello: ['नमस्कार!'], intro1: ['अरे बापरे! रागीट राजा सगळ्या गोळ्या घेऊन गेला! चला, परत आणूया!'], levelN: ['लेवल N! चला सुरू करूया!'],
+        gate: ['पकडलं! प्रश्नाची वेळ!', 'एक छोटासा प्रश्न!', 'तयार? चला!'],
+        revive: ['काही हरकत नाही! उत्तर दे आणि एक हृदय मिळव!'],
+        praise: ['वाह! खूप छान!', 'शाब्बास! तू खूप हुशार आहेस!', 'बरोबर! हाय फाइव!', 'अरे वा! जबरदस्त!'],
+        wrong: ['हम्म, ते नाही. पुन्हा प्रयत्न कर!', 'अरेरे! पुन्हा एकदा बघ.'],
+        help: ['मी मदत करते! उत्तर आहे X. चमकणाऱ्यावर टॅप कर!'],
+        door: ['दार उघडलं! कोणीतरी तुझी वाट पाहत आहे!'],
+        win: ['हुर्रे! तू करून दाखवलंस! बघ, एक छोटासा मित्र किल्ल्यात लपला होता!'] }
+};
+var QT = {
+  en: { color: function(n){ return 'Which one is ' + n + '?'; }, pick: function(n){ return 'Which one is the ' + n + '?'; }, count: function(n){ return 'How many ' + n + ' do you see?'; },
+        bigger: function(n){ return 'Which ' + n + ' is bigger?'; }, add: function(a, b){ return 'What is ' + a + ' plus ' + b + '?'; }, sub: function(a, b){ return 'What is ' + a + ' minus ' + b + '?'; },
+        mul: function(a, b){ return 'What is ' + a + ' times ' + b + '?'; }, div: function(a, b){ return 'What is ' + a + ' divided by ' + b + '?'; }, next: function(n){ return 'What number comes after ' + n + '?'; },
+        pattern: function(){ return 'What comes next in the pattern?'; }, compare: function(){ return 'Which number is bigger?'; }, odd: function(){ return 'Which number is odd?'; }, even: function(){ return 'Which number is even?'; },
+        clock: function(){ return 'What time does the clock show?'; }, oclock: function(v){ return v + " o'clock"; } },
+  hi: { color: function(n){ return 'कौन सा ' + n + ' है?'; }, pick: function(n){ return n + ' कौन सा है?'; }, count: function(n){ return 'कितने ' + n + ' दिख रहे हैं?'; },
+        bigger: function(n){ return 'कौन सा ' + n + ' बड़ा है?'; }, add: function(a, b){ return a + ' और ' + b + ' मिलाकर कितने?'; }, sub: function(a, b){ return a + ' में से ' + b + ' गए तो कितने बचे?'; },
+        mul: function(a, b){ return a + ' गुणा ' + b + ' कितने?'; }, div: function(a, b){ return a + ' भाग ' + b + ' कितने?'; }, next: function(n){ return n + ' के बाद कौन सा नंबर आता है?'; },
+        pattern: function(){ return 'आगे क्या आएगा?'; }, compare: function(){ return 'कौन सा नंबर बड़ा है?'; }, odd: function(){ return 'कौन सा नंबर विषम है?'; }, even: function(){ return 'कौन सा नंबर सम है?'; },
+        clock: function(){ return 'घड़ी में कितने बजे हैं?'; }, oclock: function(v){ return v + ' बजे'; } },
+  mr: { color: function(n){ return 'कोणता ' + n + ' आहे?'; }, pick: function(n){ return n + ' कोणता आहे?'; }, count: function(n){ return 'किती ' + n + ' दिसत आहेत?'; },
+        bigger: function(n){ return 'कोणता ' + n + ' मोठा आहे?'; }, add: function(a, b){ return a + ' अधिक ' + b + ' किती?'; }, sub: function(a, b){ return a + ' वजा ' + b + ' किती?'; },
+        mul: function(a, b){ return a + ' गुणिले ' + b + ' किती?'; }, div: function(a, b){ return a + ' भागिले ' + b + ' किती?'; }, next: function(n){ return n + ' नंतर कोणता आकडा येतो?'; },
+        pattern: function(){ return 'पुढे काय येईल?'; }, compare: function(){ return 'कोणता आकडा मोठा आहे?'; }, odd: function(){ return 'कोणता आकडा विषम आहे?'; }, even: function(){ return 'कोणता आकडा सम आहे?'; },
+        clock: function(){ return 'घड्याळात किती वाजले?'; }, oclock: function(v){ return v + ' वाजले'; } }
+};
+function lang(){ return PHRASES[settings.lang] ? settings.lang : 'en'; }
+function N_(name, isColor){ var l = lang(); if (l === 'en') return name; var t = NAMES[l]; if (isColor && name === 'orange') return t.orangeColor; return t[name] || name; }
+function TQ(kind){ var args = Array.prototype.slice.call(arguments, 1), l = lang(); return { loc: QT[l][kind].apply(null, args), en: QT.en[kind].apply(null, args) }; }
+function TQn(kind, name, isColor){ var l = lang(); return { loc: QT[l][kind](N_(name, isColor)), en: QT.en[kind](name) }; }
+function P_(key, i){ var l = lang(), list = PHRASES[l][key] || PHRASES.en[key], en = PHRASES.en[key]; if (i == null) i = rndi(0, list.length - 1); return { loc: list[i % list.length], en: en[i % en.length] }; }
+function sayP(key, sub){ var p = P_(key); var loc = p.loc, en = p.en; if (sub){ loc = loc.replace('X', sub.loc || sub).replace('N', sub.loc || sub); en = en.replace('X', sub.en || sub).replace('N', sub.en || sub); } say(loc, en); }
+var speechNote = '';
+
+function voiceFor(prefix){
+  var voices = speechSynthesis.getVoices ? speechSynthesis.getVoices() : [];
+  var list = voices.filter(function(x){ return new RegExp('^' + prefix, 'i').test(x.lang); });
+  if (!list.length) return null;
+  var pref = prefix === 'en' ? [/en[-_]IN/i, /natural|neural|premium|enhanced/i, /female|woman|girl/i, /heera|veena|neerja|zira|samantha|karen|moira|tessa|libby|sonia|aria|jenny|ava|allison/i, /google uk english female|google us english/i, /en[-_]GB/i] : [/natural|neural|premium|enhanced/i, /female|woman|girl/i, /google/i];
+  for (var pi = 0; pi < pref.length; pi++) for (var i = 0; i < list.length; i++) if (pref[pi].test(list[i].name) || pref[pi].test(list[i].lang)) return list[i];
+  return list[0];
+}
+function say(text, en){
   if (!settings.speak || !window.speechSynthesis) return;
   try {
     speechSynthesis.cancel();
-    var voices = speechSynthesis.getVoices ? speechSynthesis.getVoices() : [];
-    var v = null, en = voices.filter(function(x){ return /^en/i.test(x.lang); });
-    var pref = [/natural|neural|premium|enhanced/i, /female|woman|girl/i, /heera|veena|zira|samantha|karen|moira|tessa|libby|sonia|aria|jenny|ava|allison/i, /google uk english female|google us english/i, /en[-_]IN/i, /en[-_]GB/i];
-    for (var pi = 0; pi < pref.length && !v; pi++) for (var i = 0; i < en.length && !v; i++) if (pref[pi].test(en[i].name) || pref[pi].test(en[i].lang)) v = en[i];
-    if (!v && en.length) v = en[0];
-    var parts2 = String(text).split(/(?<=[.!?])\s+/);
-    parts2.forEach(function(sentence, idx){
+    var l = lang(), v = null, spoken = String(text);
+    if (l !== 'en' && en !== undefined && en !== text){ v = voiceFor(l); if (!v){ spoken = String(en); speechNote = l; } else speechNote = ''; }
+    if (!v) v = voiceFor('en');
+    var parts2 = spoken.split(/(?<=[.!?।])\s+/);
+    parts2.forEach(function(sentence){
       if (!sentence) return;
-      var u = new SpeechSynthesisUtterance(sentence); u.rate = 1.0; u.pitch = 1.18; u.volume = 1;
-      if (v) u.voice = v; u.lang = v ? v.lang : 'en-US';
+      var u = new SpeechSynthesisUtterance(sentence); u.rate = 0.95; u.pitch = 1.12; u.volume = 1;
+      if (v){ u.voice = v; u.lang = v.lang; } else u.lang = l === 'hi' ? 'hi-IN' : l === 'mr' ? 'mr-IN' : 'en-IN';
       speechSynthesis.speak(u);
     });
   } catch (e) {}
@@ -791,11 +870,11 @@ function startLevel(){
   P.x = 100; P.y = GY - P.h; P.vx = 0; P.vy = 0; P.hearts = maxHearts(); P.power = null; P.dance = false; P.inv = 1; P.cd = 0; P.swing = 0; P.punch = 0; P.kick = 0; P.attackCd = 0; P.facing = 1;
   balls = []; bolts = []; parts = []; flash = 0; camX = 0; sectionIdx = 0; touch = {}; pointers = {};
   makeWeather();
-  S.state = 'play'; winShown = false; loseShown = false;
+  S.state = 'play'; winShown = false; loseShown = false; S.zoomCount = 0;
   hide('title'); hide('win'); hide('lose');
   var kind = isPrince() ? 'tunic' : 'dress';
   banner(S.level > 1 ? 'Level ' + S.level + ': a ' + outfit().name + ' ' + kind + '!' : 'Go, ' + playerName() + '!');
-  if (S.level === 1) say('Oh no! The Grumpy King took all the candies! Come on, let us get them back!'); else say('Level ' + S.level + '! Wow, a ' + outfit().name + ' ' + kind + '. Here we go!');
+  if (S.level === 1) sayP('intro1'); else sayP('levelN', String(S.level));
 }
 
 /* ---------- particles ---------- */
@@ -862,7 +941,7 @@ function poof(m){
   floatText(cx, m.y - 20, m.type === 'king' ? 'The King ran away!' : 'Bye bye!', '#ffe9f5');
   sfx.poof();
   if (m.type === 'king'){ banner('The castle door is open!'); S.shake = 0.6; if (L.castleGate){ L.castleGate.open = true; sfx.gate(); }
-    if (L.pet){ L.pet.state = 'waiting'; L.pet.t = 0; say('The door is open! Someone is waiting for you!'); for (var c2 = 0; c2 < 10; c2++){ var ck = pickup('candy', L.goalX + 130, GY - 40, true); ck.vx = rnd(-260, -60); ck.vy = rnd(-420, -200); pickups.push(ck); } } }
+    if (L.pet){ L.pet.state = 'waiting'; L.pet.t = 0; sayP('door'); for (var c2 = 0; c2 < 10; c2++){ var ck = pickup('candy', L.goalX + 130, GY - 40, true); ck.vx = rnd(-260, -60); ck.vy = rnd(-420, -200); pickups.push(ck); } } }
   var n = m.type === 'king' ? 8 : m.type === 'grumpy' ? rndi(2, 3) : rndi(1, 2);
   for (var i = 0; i < n; i++){ var k = pickup(Math.random() < 0.6 ? 'coin' : 'candy', cx, cy, true); k.vx = rnd(-160, 160); k.vy = rnd(-420, -220); pickups.push(k); }
 }
@@ -909,7 +988,7 @@ function karate(){
       floatText(mcx, m.y - 24, 'Pow!', '#fff3b0');
     }
   }
-  if (hitAny){ S.shake = 0.25; zoomT = 0.9; }
+  if (hitAny){ S.shake = 0.25; if ((S.zoomCount || 0) < 2){ S.zoomCount = (S.zoomCount || 0) + 1; zoomT = 0.9; } }
 }
 
 function respawnAfterPit(pit){
@@ -1072,7 +1151,6 @@ function updatePlay(dt){
         var dir = mcx >= pcx ? 1 : -1;
         hitMonster(m, m.type === 'king' ? 1 : dmg, dir * (P.power === 'bat' ? 420 : 200), P.power === 'bat' ? -320 : -160, P.power === 'bat' ? 1.2 : 0.4);
         if (m.type === 'king') floatText(mcx, m.y - 24, 'Pow!', '#fff3b0');
-        if (m.hp <= 0 || m.type === 'king'){ zoomT = Math.max(zoomT, 0.9); S.shake = Math.max(S.shake, 0.2); }
         if (Math.abs(mcx - pcx) > 8) P.facing = dir;
       }
     }
@@ -1214,7 +1292,7 @@ function updateWin(dt){
   winT += dt; nextBolt -= dt;
   var th = theme();
   if (L.pet) L.pet.t += dt;
-  if (L.pet && L.pet.state === 'saved' && L.pet.t > 1.6 && L.pet.t - dt <= 1.6){ banner('You rescued a ' + L.pet.name + '!'); sfx.starPower(); for (var h = 0; h < 16; h++) parts.push({ x: P.x + P.w / 2 + rnd(-40, 40), y: P.y + rnd(-20, 40), vx: rnd(-50, 50), vy: rnd(-140, -50), life: 1.8, max: 1.8, color: '#ff5c8a', size: rnd(4, 8), kind: 'heart' }); }
+  if (L.pet && L.pet.state === 'saved' && L.pet.t > 1.6 && L.pet.t - dt <= 1.6){ banner('You rescued a ' + L.pet.name + '!'); sfx.starPower(); S.rescueT = 0; for (var h = 0; h < 16; h++) parts.push({ x: P.x + P.w / 2 + rnd(-40, 40), y: P.y + rnd(-20, 40), vx: rnd(-50, 50), vy: rnd(-140, -50), life: 1.8, max: 1.8, color: '#ff5c8a', size: rnd(4, 8), kind: 'heart' }); }
   if (winT > 2.0){
     P.dance = true;
     if (th.name === 'night'){ S.storm = Math.min(1, S.storm + dt * 0.6); if (nextBolt <= 0){ spawnBolt(); if (Math.random() < 0.35) spawnBolt(); nextBolt = rnd(0.45, 1.2); } }
@@ -1229,9 +1307,9 @@ function updateWin(dt){
     winShown = true;
     $('winLine').textContent = playerName() + ' made it home to the castle!';
     var pet = PETS[(S.level - 1) % PETS.length]; if (profile && profile.pets.indexOf(pet[1]) < 0){ profile.pets.push(pet[1]); saveProfile(); }
-    $('winPet').textContent = pet[1] + ' A ' + pet[0] + ' was hiding in the castle. It is your friend now!';
+    $('winPet').innerHTML = '<span class="bigpet">' + pet[1] + '</span><br>A ' + pet[0] + ' was hiding in the castle. It is your friend now!';
     $('winQ').textContent = S.levelQuestions ? 'Questions answered: ' + S.levelQuestions : '';
-    say('Hooray! You did it! And look, a little ' + pet[0] + ' was hiding in the castle!');
+    sayP('win');
     $('winCoins').textContent = S.levelCoins;
     $('winCandies').textContent = S.levelCandies;
     show('win');
@@ -1391,11 +1469,11 @@ function drawPet(){
     if (pt2.state === 'waiting'){ px2 = pt2.x; py2 = GY - 6 - Math.abs(Math.sin(pt2.t * 5)) * 18; }
     else { var k2 = Math.min(1, pt2.t / 1.6), e2 = k2 * (2 - k2), side = pt2.x < P.x + P.w / 2 ? 1 : -1, tx = P.x + P.w / 2 + side * 44; px2 = pt2.x + (tx - pt2.x) * e2; pt2.px = px2; py2 = GY - 6 - Math.abs(Math.sin(pt2.t * (k2 < 1 ? 9 : 5))) * (k2 < 1 ? 18 : 12); }
     ctx.save();
-    if (pt2.state === 'saved'){ var gl = ctx.createRadialGradient(px2, py2 - 22, 6, px2, py2 - 22, 46); gl.addColorStop(0, 'rgba(255,240,150,0.55)'); gl.addColorStop(1, 'rgba(255,240,150,0)'); ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(px2, py2 - 22, 46, 0, TAU); ctx.fill(); }
-    ctx.font = (pt2.state === 'saved' ? '54px' : '40px') + ' sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    if (pt2.state === 'saved'){ var gl = ctx.createRadialGradient(px2, py2 - 22, 6, px2, py2 - 22, 46); gl.addColorStop(0, 'rgba(255,240,150,0.55)'); gl.addColorStop(1, 'rgba(255,240,150,0)'); ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(px2, py2 - 22, 52, 0, TAU); ctx.fill(); }
+    ctx.font = (pt2.state === 'saved' ? '60px' : '44px') + ' sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = 'rgba(0,0,0,0.3)'; ellipse(px2, GY + 2, pt2.state === 'saved' ? 24 : 18, 6);
     ctx.fillText(pt2.emoji, px2, py2); ctx.restore();
-    if (pt2.state === 'saved' && pt2.t >= 1.6){ var nm = pt2.name.charAt(0).toUpperCase() + pt2.name.slice(1) + '!'; ctx.fillStyle = '#ff5c8a'; heart(px2 + 34, py2 - 62 + Math.sin(pt2.t * 4) * 5, 7); heart(px2 - 34, py2 - 70 + Math.cos(pt2.t * 3.4) * 5, 5); ctx.font = '700 20px ' + FONT; ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(40,20,80,0.9)'; ctx.lineWidth = 5; ctx.strokeText(nm, px2, py2 - 74); ctx.fillText(nm, px2, py2 - 74); }
+    if (pt2.state === 'saved' && pt2.t >= 1.6){ var nm = pt2.name.charAt(0).toUpperCase() + pt2.name.slice(1) + '!'; ctx.fillStyle = '#ff5c8a'; heart(px2 + 34, py2 - 62 + Math.sin(pt2.t * 4) * 5, 7); heart(px2 - 34, py2 - 70 + Math.cos(pt2.t * 3.4) * 5, 5); ctx.font = '700 22px ' + FONT; ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(40,20,80,0.9)'; ctx.lineWidth = 5; ctx.strokeText(nm, px2, py2 - 80); ctx.fillText(nm, px2, py2 - 80); }
     if (pt2.state === 'waiting'){ ctx.fillStyle = '#ff5c8a'; heart(px2 + 26, py2 - 44 + Math.sin(pt2.t * 4) * 4, 6); ctx.font = '700 16px ' + FONT; ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(40,20,80,0.9)'; ctx.lineWidth = 4; ctx.strokeText('Help!', px2, py2 - 56); ctx.fillText('Help!', px2, py2 - 56); }
   }
 }
@@ -1940,6 +2018,7 @@ function draw(){
   if (L){
     ctx.save();
     if (zoomT > 0){ var zq = Math.sin(Math.min(1, zoomT / 0.9) * Math.PI), zz = 1 + 0.6 * zq, zx = P.x + P.w / 2 - camX, zy = P.y + P.h / 2 - camY; ctx.translate(zx, zy); ctx.scale(zz, zz); ctx.translate(-zx, -zy); }
+    if (S.state === 'win' && L.pet && L.pet.state === 'saved'){ var wq = Math.min(1, L.pet.t / 1.6), wz = 1 + 0.5 * wq * (2 - wq), wpx = (L.pet.px != null ? L.pet.px : L.pet.x), wx = (P.x + P.w / 2 + wpx) / 2 - camX, wy = P.y + P.h / 2 - 10 - camY; ctx.translate(wx, wy); ctx.scale(wz, wz); ctx.translate(-wx, -wy); }
     ctx.translate(-Math.round(camX), -Math.round(camY));
     drawWorld();
     if (camY < 0){ var thg = theme(); ctx.fillStyle = thg.dirt; ctx.fillRect(camX - 10, H, W + 20, -camY + 10); }
@@ -1978,29 +2057,29 @@ function numOptions(answer, lo, hi, count){
   while (set.length < count) set.push(set[set.length - 1] + 1);
   return set;
 }
-function build(q, prompt, opts, answerIndex, label){ return { q: q, prompt: prompt, opts: opts, answer: answerIndex, label: label }; }
-function labelOf(v){ if (Array.isArray(v)) return v[0]; return String(v); }
+function build(q, prompt, opts, answerIndex, label){ var loc = q && q.loc !== undefined ? q.loc : q, en = q && q.en !== undefined ? q.en : q; return { q: loc, en: en, prompt: prompt, opts: opts, answer: answerIndex, label: label.loc !== undefined ? label.loc : label, labelEn: label.en !== undefined ? label.en : label }; }
+function labelOf(v, isColor){ if (Array.isArray(v)) return { loc: N_(v[0], isColor), en: v[0] }; return String(v); }
 function fromValues(q, prompt, values, correct, mk){
   var idx = []; for (var i = 0; i < values.length; i++) idx.push(i); shuffle(idx);
   var opts = [], ans = 0;
   for (i = 0; i < idx.length; i++){ opts.push(mk(values[idx[i]])); if (values[idx[i]] === correct) ans = i; }
-  return build(q, prompt, opts, ans, labelOf(correct));
+  return build(q, prompt, opts, ans, labelOf(correct, q && q.isColor));
 }
-function qColor(){ var c = pickN(COLORS, 4), a = pick(c); return fromValues('Which one is ' + a[0] + '?', '', c, a, function(v){ return { color: v[1] }; }); }
-function qPick(cat){ var c = pickN(cat, 4), a = pick(c); return fromValues('Which one is the ' + a[0] + '?', '', c, a, function(v){ return { emoji: v[1] }; }); }
-function qCount(max){ var n = rndi(1, max), k = rndi(0, CUTE.length - 1), s = ''; for (var i = 0; i < n; i++) s += CUTE[k]; var vals = numOptions(n, 1, Math.max(5, max), 4); return fromValues('How many ' + CUTE_NAME[k] + ' do you see?', s, vals, n, function(v){ return { num: v }; }); }
-function qShape(){ var c = pickN(SHAPES, 4), a = pick(c); return fromValues('Which one is the ' + a[0] + '?', '', c, a, function(v){ return { shape: v[1] }; }); }
-function qBigger(){ var e = pick(THINGS.concat(ANIMALS)); var vals = ['the big one', 'the small one']; return fromValues('Which ' + e[0] + ' is bigger?', '', vals, 'the big one', function(v){ return { emoji: e[1], size: v === 'the big one' ? 1.4 : 0.6 }; }); }
-function qAdd(max){ var a = rndi(1, max - 1), b = rndi(1, max - a), k = rndi(0, CUTE.length - 1), s = ''; for (var i = 0; i < a; i++) s += CUTE[k]; s += ' + '; for (i = 0; i < b; i++) s += CUTE[k]; if (max > 12) s = a + ' + ' + b; return fromValues('What is ' + a + ' plus ' + b + '?', s, numOptions(a + b, Math.max(1, a + b - 4), a + b + 4, 4), a + b, function(v){ return { num: v }; }); }
-function qSub(max){ var a = rndi(3, max), b = rndi(1, a - 1); return fromValues('What is ' + a + ' minus ' + b + '?', a + ' − ' + b, numOptions(a - b, Math.max(0, a - b - 4), a - b + 4, 4), a - b, function(v){ return { num: v }; }); }
-function qMul(max){ var a = rndi(2, max), b = rndi(2, max); return fromValues('What is ' + a + ' times ' + b + '?', a + ' × ' + b, numOptions(a * b, Math.max(1, a * b - 6), a * b + 6, 4), a * b, function(v){ return { num: v }; }); }
-function qDiv(){ var b = rndi(2, 9), r = rndi(2, 9), a = b * r; return fromValues('What is ' + a + ' divided by ' + b + '?', a + ' ÷ ' + b, numOptions(r, Math.max(1, r - 3), r + 3, 4), r, function(v){ return { num: v }; }); }
+function qColor(){ var c = pickN(COLORS, 4), a = pick(c); var t = TQn('color', a[0], true); t.isColor = true; return fromValues(t, '', c, a, function(v){ return { color: v[1] }; }); }
+function qPick(cat){ var c = pickN(cat, 4), a = pick(c); return fromValues(TQn('pick', a[0]), '', c, a, function(v){ return { emoji: v[1] }; }); }
+function qCount(max){ var n = rndi(1, max), k = rndi(0, CUTE.length - 1), s = ''; for (var i = 0; i < n; i++) s += CUTE[k]; var vals = numOptions(n, 1, Math.max(5, max), 4); return fromValues(TQn('count', CUTE_NAME[k]), s, vals, n, function(v){ return { num: v }; }); }
+function qShape(){ var c = pickN(SHAPES, 4), a = pick(c); return fromValues(TQn('pick', a[0]), '', c, a, function(v){ return { shape: v[1] }; }); }
+function qBigger(){ var e = pick(THINGS.concat(ANIMALS)); var vals = [['the big one'], ['the small one']]; return fromValues(TQn('bigger', e[0]), '', vals, vals[0], function(v){ v = v[0]; return { emoji: e[1], size: v === 'the big one' ? 1.4 : 0.6 }; }); }
+function qAdd(max){ var a = rndi(1, max - 1), b = rndi(1, max - a), k = rndi(0, CUTE.length - 1), s = ''; for (var i = 0; i < a; i++) s += CUTE[k]; s += ' + '; for (i = 0; i < b; i++) s += CUTE[k]; if (max > 12) s = a + ' + ' + b; return fromValues(TQ('add', a, b), s, numOptions(a + b, Math.max(1, a + b - 4), a + b + 4, 4), a + b, function(v){ return { num: v }; }); }
+function qSub(max){ var a = rndi(3, max), b = rndi(1, a - 1); return fromValues(TQ('sub', a, b), a + ' − ' + b, numOptions(a - b, Math.max(0, a - b - 4), a - b + 4, 4), a - b, function(v){ return { num: v }; }); }
+function qMul(max){ var a = rndi(2, max), b = rndi(2, max); return fromValues(TQ('mul', a, b), a + ' × ' + b, numOptions(a * b, Math.max(1, a * b - 6), a * b + 6, 4), a * b, function(v){ return { num: v }; }); }
+function qDiv(){ var b = rndi(2, 9), r = rndi(2, 9), a = b * r; return fromValues(TQ('div', a, b), a + ' ÷ ' + b, numOptions(r, Math.max(1, r - 3), r + 3, 4), r, function(v){ return { num: v }; }); }
 function qLetter(){ var L = 'ABCDEFGHJKLMNPRST'.split(''), c = pickN(L, 4), a = pick(c); return fromValues('Which one is the letter ' + a + '?', '', c, a, function(v){ return { text: v }; }); }
 function qFirstLetter(){ var e = pick(FRUITS.concat(ANIMALS)), f = e[0][0].toUpperCase(), others = pickN('ABCDEGHKLMPRSTW'.replace(f, '').split(''), 3); return fromValues('Which letter does ' + e[0] + ' start with?', e[1], [f].concat(others), f, function(v){ return { text: v }; }); }
-function qNext(max){ var n = rndi(1, max - 1); return fromValues('What number comes after ' + n + '?', n + ' , ?', numOptions(n + 1, Math.max(1, n - 2), n + 4, 4), n + 1, function(v){ return { num: v }; }); }
-function qPattern(){ var e = pickN(CUTE, 3); return fromValues('What comes next in the pattern?', e[0] + ' ' + e[1] + ' ' + e[0] + ' ' + e[1] + ' ' + e[0] + ' ?', [e[1], e[0], e[2]], e[1], function(v){ return { emoji: v }; }); }
-function qCompare(max){ var a = rndi(1, max), b = rndi(1, max); while (b === a) b = rndi(1, max); return fromValues('Which number is bigger?', '', [a, b], Math.max(a, b), function(v){ return { num: v }; }); }
-function qOddEven(){ var even = Math.random() < 0.5, vals = [], target; while (vals.length < 4){ var v = rndi(2, 30); if (vals.indexOf(v) >= 0) continue; var isE = v % 2 === 0; if (target == null && isE === even){ target = v; vals.push(v); } else if (isE !== even) vals.push(v); } return fromValues('Which number is ' + (even ? 'even' : 'odd') + '?', '', vals, target, function(v){ return { num: v }; }); }
+function qNext(max){ var n = rndi(1, max - 1); return fromValues(TQ('next', n), n + ' , ?', numOptions(n + 1, Math.max(1, n - 2), n + 4, 4), n + 1, function(v){ return { num: v }; }); }
+function qPattern(){ var e = pickN(CUTE, 3); return fromValues(TQ('pattern'), e[0] + ' ' + e[1] + ' ' + e[0] + ' ' + e[1] + ' ' + e[0] + ' ?', [e[1], e[0], e[2]], e[1], function(v){ return { emoji: v }; }); }
+function qCompare(max){ var a = rndi(1, max), b = rndi(1, max); while (b === a) b = rndi(1, max); return fromValues(TQ('compare'), '', [a, b], Math.max(a, b), function(v){ return { num: v }; }); }
+function qOddEven(){ var even = Math.random() < 0.5, vals = [], target; while (vals.length < 4){ var v = rndi(2, 30); if (vals.indexOf(v) >= 0) continue; var isE = v % 2 === 0; if (target == null && isE === even){ target = v; vals.push(v); } else if (isE !== even) vals.push(v); } return fromValues(TQ(even ? 'even' : 'odd'), '', vals, target, function(v){ return { num: v }; }); }
 function misspell(w){
   var arr = w.split(''), k = rndi(0, 2), i;
   if (k === 0 && w.length > 2){ i = rndi(0, w.length - 2); var t = arr[i]; arr[i] = arr[i + 1]; arr[i + 1] = t; }
@@ -2009,7 +2088,7 @@ function misspell(w){
   var s = arr.join(''); return s === w ? w + 'e' : s;
 }
 function qSpell(list){ var e = pick(list), set = [e[0]], tries = 0; while (set.length < 4 && tries < 40){ tries++; var m = misspell(e[0]); if (set.indexOf(m) < 0) set.push(m); } return fromValues('Which one spells ' + e[0] + '?', e[1], set, e[0], function(v){ return { text: v.toUpperCase() }; }); }
-function qClock(){ var h = rndi(1, 12), vals = numOptions(h, 1, 12, 4); return fromValues('What time does the clock show?', CLOCKS[h - 1], vals, h, function(v){ return { text: v + " o'clock" }; }); }
+function qClock(){ var h = rndi(1, 12), vals = numOptions(h, 1, 12, 4); return fromValues(TQ('clock'), CLOCKS[h - 1], vals, h, function(v){ return { text: QT[lang()].oclock(v) }; }); }
 function qOpposite(){ var p = pick(OPPOSITES), others = pickN(OPPOSITES.filter(function(x){ return x !== p; }), 3).map(function(x){ return x[1]; }); return fromValues('What is the opposite of ' + p[0] + '?', '', [p[1]].concat(others), p[1], function(v){ return { text: v }; }); }
 
 var TIERS = [
@@ -2042,26 +2121,26 @@ function openQuiz(gate, mode){
   stats.asked = (stats.asked || 0) + 1; var kt = stats.types[quiz.q.kind] || { asked: 0, right: 0 }; kt.asked++; stats.types[quiz.q.kind] = kt; saveStats();
   S.state = 'quiz'; clearKeys(); touch = {}; pointers = {}; music.duck = 0.35;
   $('quizQ').textContent = quiz.q.q; $('quizPrompt').textContent = quiz.q.prompt || '';
-  var intro = mode === 'revive' ? pick(['Oh dear! Answer this and you get a heart!', 'No worries! Answer this for a new heart.']) : pick(['Got you! Question time!', 'Ooh, a puzzle for you!', 'Ready? Here we go!', 'Caught you! One little question first!']);
+  var introP = P_(mode === 'revive' ? 'revive' : 'gate'), intro = introP.loc;
   $('quizMute').hidden = settings.speak && settings.sound;
   $('quizIntro').textContent = intro;
   var box = $('quizOpts'); box.innerHTML = ''; box.className = 'quiz-opts' + (quiz.q.opts.length === 2 ? ' two' : '');
   quiz.q.opts.forEach(function(o, i){ var b = tileEl(o); b.addEventListener('click', function(){ answerQuiz(i, b); }); box.appendChild(b); });
   drawQuizMonster();
   show('quiz');
-  setTimeout(function(){ say(intro + ' ' + quiz.q.q); }, 250);
+  setTimeout(function(){ say(intro + ' ' + quiz.q.q, introP.en + ' ' + quiz.q.en); }, 250);
 }
 function answerQuiz(i, btn){
   if (quiz.done) return;
   if (i === quiz.q.answer){
     quiz.done = true; btn.classList.add('right'); sfx.right(); S.levelQuestions++;
     if (quiz.wrong === 0){ stats.right = (stats.right || 0) + 1; var kt2 = stats.types[quiz.q.kind]; if (kt2) kt2.right++; saveStats(); }
-    say(pick(['Yay! You did it!', 'Whoo hoo! Super smart!', 'Yes! High five!', 'That is it! Brilliant!', 'Wow! You are amazing!', 'Hooray! Off you go!']));
+    sayP('praise');
     setTimeout(closeQuiz, 1300);
   } else {
     quiz.wrong++; btn.classList.add('wrong'); sfx.wrong();
-    if (quiz.wrong >= 2){ var tiles = $('quizOpts').children; tiles[quiz.q.answer].classList.add('hint'); say('Let me help! It is ' + quiz.q.label + '. Tap the glowing one!'); }
-    else say(pick(['Hmm, not that one. Try again!', 'Oopsie! Have another look.', 'Almost! One more try!']));
+    if (quiz.wrong >= 2){ var tiles = $('quizOpts').children; tiles[quiz.q.answer].classList.add('hint'); sayP('help', { loc: quiz.q.label, en: quiz.q.labelEn }); }
+    else sayP('wrong');
   }
 }
 function closeQuiz(){
@@ -2334,12 +2413,18 @@ function renderSettings(){
   var mr = $('musicRow').children; for (var i = 0; i < mr.length; i++){ var tn = mr[i].getAttribute('data-tune'); mr[i].classList.toggle('on', tn === 'off' ? !settings.music : (settings.music && settings.tune === tn)); }
   $('soundOn').classList.toggle('on', settings.sound); $('soundOff').classList.toggle('on', !settings.sound);
   $('speakOn').classList.toggle('on', settings.speak); $('speakOff').classList.toggle('on', !settings.speak);
+  var lr = $('langRow').children; for (i = 0; i < lr.length; i++) lr[i].classList.toggle('on', lr[i].getAttribute('data-lang') === settings.lang);
+  var note = '';
+  if (settings.lang !== 'en' && window.speechSynthesis){ var lv = voiceFor(settings.lang); if (!lv) note = 'No ' + (settings.lang === 'hi' ? 'Hindi' : 'Marathi') + ' voice is installed on this device, so questions are shown in ' + (settings.lang === 'hi' ? 'Hindi' : 'Marathi') + ' but read aloud in English. On Android, open Settings, then Google Text-to-speech, and install the ' + (settings.lang === 'hi' ? 'Hindi' : 'Marathi') + ' voice.'; else note = 'Voice: ' + lv.name; }
+  else if (window.speechSynthesis){ var ev = voiceFor('en'); if (ev) note = 'Voice: ' + ev.name + (/en[-_]IN/i.test(ev.lang) ? ' (Indian English)' : ''); }
+  $('langNote').textContent = note;
 }
 function setOpt(key, val){ settings[key] = val; saveSettings(); renderSettings(); if (key === 'sound' && val) sfx.coin(); }
 $('musicRow').addEventListener('click', function(e){ var tn = e.target.getAttribute('data-tune'); if (!tn) return; if (tn === 'off'){ setOpt('music', false); } else { settings.tune = tn; setOpt('music', true); audioOn(); if (AC && music.running){ music.step = 0; } } });
+$('langRow').addEventListener('click', function(e){ var v = e.target.getAttribute('data-lang'); if (v){ settings.lang = v; saveSettings(); renderSettings(); sayP('hello'); } });
 $('soundOn').addEventListener('click', function(){ setOpt('sound', true); });
 $('soundOff').addEventListener('click', function(){ setOpt('sound', false); });
-$('speakOn').addEventListener('click', function(){ setOpt('speak', true); say('Hello ' + playerName() + '!'); });
+$('speakOn').addEventListener('click', function(){ setOpt('speak', true); sayP('hello'); });
 $('speakOff').addEventListener('click', function(){ setOpt('speak', false); });
 $('howBtn').addEventListener('click', function(){ $('howText').hidden = !$('howText').hidden; });
 $('changeChar').addEventListener('click', function(){ hide('settings'); pausedFrom = null; if (S.state === 'paused') S.state = 'title'; openSetup(); });
@@ -2373,7 +2458,7 @@ $('lookNext').addEventListener('click', function(){ setupStep(4); });
 $('dobDone').addEventListener('click', function(){
   draft.dob = $('dobInput').value || '';
   profile = draft; saveProfile(); hide('setup');
-  S.state = 'title'; refreshTitle(); show('title'); say('Hello ' + playerName() + '!');
+  S.state = 'title'; refreshTitle(); show('title'); sayP('hello');
 });
 
 /* ---------- input ---------- */
@@ -2430,7 +2515,7 @@ document.addEventListener('visibilitychange', function(){ if (document.hidden){ 
 $('playBtn').addEventListener('click', function(){ audioOn(); if (!canPlay()){ lockGame(); return; } S.level = 1; S.coins = 0; S.candies = 0; startLevel(); });
 $('nextBtn').addEventListener('click', function(){ audioOn(); S.level++; startLevel(); });
 $('retryBtn').addEventListener('click', function(){ audioOn(); startLevel(); });
-$('quizSpeak').addEventListener('click', function(){ if (quiz.q) say(quiz.q.q); });
+$('quizSpeak').addEventListener('click', function(){ if (quiz.q) say(quiz.q.q, quiz.q.en); });
 $('reviveCoins').addEventListener('click', function(){ if (total.coins >= REVIVE_COST){ total.coins -= REVIVE_COST; saveTotal(); sfx.coin(); revive(); } });
 $('reviveQuiz').addEventListener('click', function(){ hide('revive'); openQuiz(null, 'revive'); });
 $('reviveRestart').addEventListener('click', function(){ hide('revive'); startLevel(); });
