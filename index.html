@@ -419,6 +419,27 @@ var TUNES = {
       ['F5', null, 'E5', null, 'D5', null, null, null, 'C5', null, 'B4', null, 'A4', null, null, null],
       ['B4', null, 'C5', null, 'D5', null, null, null, 'C5', null, null, null, null, null, null, null]],
     chords: [['A3', 'C4', 'E4'], ['F3', 'A3', 'C4'], ['D4', 'F4', 'A4'], ['E4', 'G4', 'B4']], bass: ['A3', 'F3', 'D3', 'E3'] },
+  power: { name: 'Power', bpm: 132, lead: 'square', leadVol: 0.32, padVol: 0.12,
+    melody: [
+      ['C5', 'E5', 'G5', 'C6', 'G5', 'E5', 'C5', 'E5', 'G5', null, 'A5', 'G5', 'E5', null, 'D5', null],
+      ['F5', 'A5', 'C6', 'A5', 'F5', 'A5', 'C6', null, 'G5', 'B4', 'D5', 'G5', 'D5', 'B4', 'G5', null],
+      ['C5', 'E5', 'G5', 'C6', 'G5', 'E5', 'C5', 'E5', 'A5', null, 'G5', 'A5', 'C6', null, 'G5', null],
+      ['E5', 'G5', 'E5', 'D5', 'C5', null, 'D5', 'E5', 'G5', 'G5', 'A5', 'G5', 'E5', null, null, null]],
+    chords: [['C4', 'E4', 'G4'], ['F3', 'A3', 'C4'], ['A3', 'C4', 'E4'], ['G3', 'B3', 'D4']], bass: ['C3', 'F3', 'A3', 'G3'] },
+  power: { name: 'Power', bpm: 132, lead: 'square', leadVol: 0.32, padVol: 0.12,
+    melody: [
+      ['C5', 'E5', 'G5', 'C6', 'G5', 'E5', 'C5', 'E5', 'G5', null, 'A5', 'G5', 'E5', null, 'D5', null],
+      ['F5', 'A5', 'C6', 'A5', 'F5', 'A5', 'C6', null, 'G5', 'B4', 'D5', 'G5', 'D5', 'B4', 'G5', null],
+      ['C5', 'E5', 'G5', 'C6', 'G5', 'E5', 'C5', 'E5', 'A5', null, 'G5', 'A5', 'C6', null, 'G5', null],
+      ['E5', 'G5', 'E5', 'D5', 'C5', null, 'D5', 'E5', 'G5', 'G5', 'A5', 'G5', 'E5', null, null, null]],
+    chords: [['C4', 'E4', 'G4'], ['F3', 'A3', 'C4'], ['A3', 'C4', 'E4'], ['G3', 'B3', 'D4']], bass: ['C3', 'F3', 'A3', 'G3'] },
+  power: { name: 'Power', bpm: 132, lead: 'square', leadVol: 0.32, padVol: 0.12,
+    melody: [
+      ['C5', 'E5', 'G5', 'C6', 'G5', 'E5', 'C5', 'E5', 'G5', null, 'A5', 'G5', 'E5', null, 'D5', null],
+      ['F5', 'A5', 'C6', 'A5', 'F5', 'A5', 'C6', null, 'G5', 'B4', 'D5', 'G5', 'D5', 'B4', 'G5', null],
+      ['C5', 'E5', 'G5', 'C6', 'G5', 'E5', 'C5', 'E5', 'A5', null, 'G5', 'A5', 'C6', null, 'G5', null],
+      ['E5', 'G5', 'E5', 'D5', 'C5', null, 'D5', 'E5', 'G5', 'G5', 'A5', 'G5', 'E5', null, null, null]],
+    chords: [['C4', 'E4', 'G4'], ['F3', 'A3', 'C4'], ['A3', 'C4', 'E4'], ['G3', 'B3', 'D4']], bass: ['C3', 'F3', 'A3', 'G3'] },
   adventure: { name: 'Little Adventure', bpm: 96, lead: 'triangle', leadVol: 0.5, padVol: 0.14,
     melody: [
       ['C5', null, 'E5', null, 'G5', null, 'E5', null, 'A5', null, 'G5', null, 'E5', null, 'D5', null],
@@ -427,9 +448,9 @@ var TUNES = {
       ['D5', null, 'E5', null, 'D5', null, 'C5', null, 'C5', null, null, null, null, null, null, null]],
     chords: [['C4', 'E4', 'G4'], ['F3', 'A3', 'C4'], ['A3', 'C4', 'E4'], ['G3', 'B3', 'D4']], bass: ['C3', 'F3', 'A3', 'G3'] }
 };
-function TUNE(){ return TUNES[settings.tune] || TUNES.lullaby; }
+function TUNE(){ return TUNES[music.key] || TUNES[settings.tune] || TUNES.lullaby; }
 var music = {
-  on: true, running: false, nextT: 0, step: 0, gainNode: null, timer: null, duck: 1,
+  on: true, running: false, nextT: 0, step: 0, gainNode: null, timer: null, duck: 1, key: null, key: null, key: null,
   start: function(){
     if (this.running || !AC) return;
     this.gainNode = AC.createGain(); this.gainNode.gain.value = 0; this.gainNode.connect(AC.destination);
@@ -441,6 +462,9 @@ var music = {
     if (!AC) return;
     var want = (settings.music && !document.hidden && (S.state === 'play' || S.state === 'title' || S.state === 'win' || S.state === 'quiz' || S.state === 'shop')) ? 0.055 * this.duck : 0;
     this.gainNode.gain.setTargetAtTime(want, AC.currentTime, 0.2);
+    var key = (S.state === 'play' && P.power) ? 'power' : settings.tune; if (key !== this.key){ this.key = key; this.step = 0; this.nextT = Math.max(this.nextT, AC.currentTime + 0.05); }
+    var key = (S.state === 'play' && P.power) ? 'power' : settings.tune; if (key !== this.key){ this.key = key; this.step = 0; this.nextT = Math.max(this.nextT, AC.currentTime + 0.05); }
+    var key = (S.state === 'play' && P.power) ? 'power' : settings.tune; if (key !== this.key){ this.key = key; this.step = 0; this.nextT = Math.max(this.nextT, AC.currentTime + 0.05); }
     var stepDur = 60 / TUNE().bpm / 4;
     while (this.nextT < AC.currentTime + 0.2){
       if (want > 0) this.play(this.step, this.nextT, stepDur);
@@ -458,6 +482,9 @@ var music = {
     var m = T.melody[bar][i]; if (m) this.note(NOTE[m], t0, dur * 2.4, T.lead, T.leadVol);
     if (i % 4 === 0){ var ch = T.chords[bar]; for (var c = 0; c < ch.length; c++) this.note(NOTE[ch[c]], t0 + c * 0.03, dur * 4.5, 'sine', T.padVol); }
     if (i === 0 || i === 8) this.note(NOTE[T.bass[bar]], t0, dur * 7, 'triangle', 0.45);
+    if (this.key === 'power' && i % 2 === 0) this.note(i % 4 === 0 ? 100 : 70, t0, 0.07, 'sine', 0.6);
+    if (this.key === 'power' && i % 2 === 0) this.note(i % 4 === 0 ? 100 : 70, t0, 0.07, 'sine', 0.6);
+    if (this.key === 'power' && i % 2 === 0) this.note(i % 4 === 0 ? 100 : 70, t0, 0.07, 'sine', 0.6);
   }
 };
 
@@ -469,14 +496,18 @@ function say(text){
   if (!settings.speak || !window.speechSynthesis) return;
   try {
     speechSynthesis.cancel();
-    var u = new SpeechSynthesisUtterance(text); u.rate = 0.92; u.pitch = 1.05;
     var voices = speechSynthesis.getVoices ? speechSynthesis.getVoices() : [];
     var v = null, en = voices.filter(function(x){ return /^en/i.test(x.lang); });
-    var pref = [/female|woman|girl/i, /heera|veena|zira|samantha|karen|moira|tessa|libby|sonia|aria|jenny/i, /google uk english female|google us english/i, /en[-_]IN/i, /en[-_]GB/i];
+    var pref = [/natural|neural|premium|enhanced/i, /female|woman|girl/i, /heera|veena|zira|samantha|karen|moira|tessa|libby|sonia|aria|jenny|ava|allison/i, /google uk english female|google us english/i, /en[-_]IN/i, /en[-_]GB/i];
     for (var pi = 0; pi < pref.length && !v; pi++) for (var i = 0; i < en.length && !v; i++) if (pref[pi].test(en[i].name) || pref[pi].test(en[i].lang)) v = en[i];
     if (!v && en.length) v = en[0];
-    if (v) u.voice = v; u.lang = v ? v.lang : 'en-US';
-    speechSynthesis.speak(u);
+    var parts2 = String(text).split(/(?<=[.!?])\s+/);
+    parts2.forEach(function(sentence, idx){
+      if (!sentence) return;
+      var u = new SpeechSynthesisUtterance(sentence); u.rate = 1.0; u.pitch = 1.18; u.volume = 1;
+      if (v) u.voice = v; u.lang = v ? v.lang : 'en-US';
+      speechSynthesis.speak(u);
+    });
   } catch (e) {}
 }
 
@@ -513,7 +544,7 @@ var BCOL = [
   { wall: '#9ad0ff', roof: '#d3eaff', door: '#3a72b8', trim: '#ffa3c9' }
 ];
 var POWER_NAMES = { axe: 'Axe Power!', bag: 'Super Power Bag!', bat: 'Bat Power!', ball: 'Ball Power!', wand: 'Magic Wand!', star: 'Star Power!' };
-var POWER_TIME = { axe: 12, bag: 9, bat: 12, ball: 10, wand: 12, star: 5 };
+var POWER_TIME = { axe: 12, bag: 12, bat: 12, ball: 12, wand: 12, star: 10 };
 var POWER_SETS = [['bat', 'ball'], ['axe', 'wand'], ['bag', 'bat'], ['wand', 'ball']];
 function randPower(){ return pick(POWER_SETS[(S.level - 1) % POWER_SETS.length]); }
 var PETS = [['kitten', '\uD83D\uDC31'], ['puppy', '\uD83D\uDC36'], ['bunny', '\uD83D\uDC30'], ['chick', '\uD83D\uDC25'], ['panda', '\uD83D\uDC3C'], ['pony', '\uD83D\uDC34'], ['duckling', '\uD83E\uDD86'], ['koala', '\uD83D\uDC28']];
@@ -525,7 +556,7 @@ var lastInput = 'pointer';
 var P = { x: 100, y: GY - 66, w: 26, h: 66, vx: 0, vy: 0, onGround: false, facing: 1, hearts: 3, power: null, powerT: 0, powerMax: 1,
   cd: 0, swing: 0, punch: 0, kick: 0, attackCd: 0, inv: 0, moving: false, ballCd: 0, dance: false, walk: 0, jumping: false, coyote: 0, jumpBuf: 0, crouch: false, guard: false };
 var L = null, monsters = [], pickups = [], balls = [], parts = [], bolts = [], weather = [];
-var camX = 0, camY = 0, flash = 0, nextBolt = 0, winT = 0, loseT = 0, sectionIdx = 0, pausedFrom = null;
+var camX = 0, camY = 0, zoomT = 0, flash = 0, nextBolt = 0, winT = 0, loseT = 0, sectionIdx = 0, pausedFrom = null;
 var keys = {}, touch = {}, pointers = {}, prevJumpHeld = false, prevAttack = false;
 function clearKeys(){ for (var k in keys) delete keys[k]; }
 var winShown = false, loseShown = false;
@@ -553,7 +584,7 @@ function makeMonster(x, type, lv){
   if (type === 'slime'){ w = r * 2.6; h = r * 1.3; }
   if (type === 'crab'){ w = r * 2.8; h = r * 1.4; }
   if (type === 'birdie'){ w = r * 2; h = r * 1.6; }
-  var hp = isK ? 5 + lv : isG ? (lv >= 4 ? 3 : 2) : (type === 'cyclops' ? 3 : (type === 'blob' || type === 'birdie' || type === 'crab' || type === 'shroom') ? 1 : 2);
+  var hp = isK ? 6 + lv : isG ? (lv >= 4 ? 3 : 2) : (type === 'cyclops' ? 3 : (type === 'blob' || type === 'birdie' || type === 'crab' || type === 'shroom') ? 1 : 2);
   var col = isK ? '#ff6b6b' : isG ? '#ff8585' : isW ? '#b48cff' : type === 'ghost' ? '#e6f0ff' : type === 'slime' ? '#8ee36f' : type === 'shroom' ? '#ffb08a' : MCOL[rndi(0, MCOL.length - 1)];
   return { x: x - w / 2, y: 0, w: w, h: h, r: r, type: type, color: col, pattern: (isK || isW || isG) ? 0 : rndi(0, 2), mouth: rndi(0, 2),
     hp: hp, maxhp: hp, vx: 0, vy: 0, dir: Math.random() < 0.5 ? -1 : 1, speed: (isK ? 110 : isG ? 70 : type === 'crab' ? 40 : type === 'birdie' ? 90 : type === 'ghost' ? 45 : 55) + lv * 7, onGround: false,
@@ -686,8 +717,7 @@ function startLevel(){
   hide('title'); hide('win'); hide('lose');
   var kind = isPrince() ? 'tunic' : 'dress';
   banner(S.level > 1 ? 'Level ' + S.level + ': a ' + outfit().name + ' ' + kind + '!' : 'Go, ' + playerName() + '!');
-  if (S.level === 1) say('The Grumpy King took all the candies from the castle. Go, ' + playerName() + ', bring them back!');
-  if (S.level === 1) say('The Grumpy King took all the candies from the castle. Go, ' + playerName() + ', bring them back!');
+  if (S.level === 1) say('Oh no! The Grumpy King took all the candies! Come on, ' + playerName() + '. Let us get them back!'); else say('Level ' + S.level + '! Wow, a ' + outfit().name + ' ' + kind + '. Go, ' + playerName() + '!');
 }
 
 /* ---------- particles ---------- */
@@ -785,11 +815,6 @@ function tryCandyHeal(){
   if (!canHeal()) return false;
   S.candies -= 5; P.hearts++; S.healCd = 15; sfx.candy(); banner('Yum! 5 candies, 1 heart!'); burst(P.x + P.w / 2, P.y + 10, 12, '#ff5c8a', 'heart'); return true;
 }
-function canHeal(){ return S.state === 'play' && P.hearts < maxHearts() && S.candies >= 5 && S.healCd <= 0; }
-function tryCandyHeal(){
-  if (!canHeal()) return false;
-  S.candies -= 5; P.hearts++; S.healCd = 15; sfx.candy(); banner('Yum! 5 candies, 1 heart!'); burst(P.x + P.w / 2, P.y + 10, 12, '#ff5c8a', 'heart'); return true;
-}
 function karate(){
   if (P.attackCd > 0 || S.state !== 'play') return;
   P.attackCd = 0.7; P.kick = 0.4; sfx.bigSwing();
@@ -798,14 +823,14 @@ function karate(){
   for (var i = 0; i < monsters.length; i++){
     var m = monsters[i]; if (m.dizzy > 0 || m.type === 'wise') continue;
     var mcx = m.x + m.w / 2, mBottom = m.y + m.h;
-    var inFront = (mcx - pcx) * P.facing > -10;
+    var inFront = (mcx - pcx) * P.facing > -45;
     if (inFront && Math.abs(mcx - pcx) < 92 + m.w / 2 && Math.abs(mBottom - pBottom) < 90){
       hitAny = true;
       hitMonster(m, 2, P.facing * 380, -300, 0.9);
       floatText(mcx, m.y - 24, 'Pow!', '#fff3b0');
     }
   }
-  if (hitAny) S.shake = 0.25;
+  if (hitAny){ S.shake = 0.25; zoomT = 0.6; }
 }
 
 function respawnAfterPit(pit){
@@ -874,8 +899,9 @@ function update(dt){
     if (th.snow){ f.y += f.v * dt; f.x += Math.sin(S.time * 1.5 + f.o) * 20 * dt - 8 * dt; if (f.y > H) { f.y = -5; f.x = Math.random() * W; } if (f.x < -5) f.x = W + 5; }
     else { f.y += f.v * dt; f.x -= f.v * 0.25 * dt; if (f.y > H){ f.y = -20; f.x = Math.random() * (W + 200); } }
   }
+  zoomT = Math.max(0, zoomT - dt);
   if (S.state === 'play') tickLock(dt);
-  if (S.state === 'play') updatePlay(dt);
+  if (S.state === 'play') updatePlay(zoomT > 0 ? dt * 0.55 : dt);
   else if (S.state === 'win') updateWin(dt);
   else if (S.state === 'lose'){ loseT += dt; updateMonsters(dt, true); if (loseT > 0.8 && !loseShown){ loseShown = true; show('lose'); } }
   else if (S.state === 'title' || S.state === 'locked' || S.state === 'quiz' || S.state === 'paused' || S.state === 'revive' || S.state === 'shop'){ updateMonsters(dt, true); }
@@ -941,12 +967,13 @@ function updatePlay(dt){
   if (P.cd <= 0){
     var hitAny = false;
     for (i = 0; i < monsters.length; i++){
-      var m = monsters[i]; if (m.dizzy > 0 || m.type === 'wise' || m.type === 'king') continue;
+      var m = monsters[i]; if (m.dizzy > 0 || m.type === 'wise') continue;
       var mcx = m.x + m.w / 2, mBottom = m.y + m.h;
       if (Math.abs(mcx - pcx) < range + m.w / 2 && Math.abs(mBottom - pBottom) < 60){
         hitAny = true;
         var dir = mcx >= pcx ? 1 : -1;
-        hitMonster(m, dmg, dir * (P.power === 'bat' ? 420 : 200), P.power === 'bat' ? -320 : -160, P.power === 'bat' ? 1.2 : 0.4);
+        hitMonster(m, m.type === 'king' ? 1 : dmg, dir * (P.power === 'bat' ? 420 : 200), P.power === 'bat' ? -320 : -160, P.power === 'bat' ? 1.2 : 0.4);
+        if (m.type === 'king') floatText(mcx, m.y - 24, 'Pow!', '#fff3b0');
         if (Math.abs(mcx - pcx) > 8) P.facing = dir;
       }
     }
@@ -1028,10 +1055,7 @@ function updateMonsters(dt, idle){
     if (m.stun <= 0){
       var sp = m.speed;
       if (!idle && m.type === 'king'){
-        m.phaseT = (m.phaseT || 0) - dt;
-        if (m.phaseT <= 0){ m.resting = !m.resting; m.phaseT = m.resting ? Math.max(1.4, 2.8 - S.level * 0.2) : Math.min(3, 1.2 + S.level * 0.25); if (!m.resting) sfx.boss(); }
-        if (m.resting){ sp = 0; }
-        else if (Math.abs(mcx - pcx) < 560){ m.dir = pcx > mcx ? 1 : -1; sp *= 1.3; m.hopT -= dt; if (m.hopT <= 0 && m.onGround){ m.vy = -560; m.hopT = rnd(1.6, 2.6); } }
+        if (Math.abs(mcx - pcx) < 560){ m.dir = pcx > mcx ? 1 : -1; sp = 95 + S.level * 8; m.hopT -= dt; if (m.hopT <= 0 && m.onGround){ m.vy = -520; m.hopT = rnd(2.2, 3.4); sfx.boss(); } }
         if (m.onGround && !groundAhead(m, m.dir)) sp = 0;
       } else if (!idle && m.charges && Math.abs(mcx - pcx) < 300 && Math.abs((m.y + m.h) - (P.y + P.h)) < 90 && P.power !== 'bag' && P.power !== 'star'){
         m.dir = pcx > mcx ? 1 : -1; sp *= 1.4;
@@ -1049,7 +1073,7 @@ function updateMonsters(dt, idle){
       if (stomp){
         hitMonster(m, m.type === 'king' ? 1 : 2, (mcx >= pcx ? 1 : -1) * 120, 0, 0.6); P.vy = -380; P.jumping = false; P.y = m.y - P.h - 1;
         floatText(mcx, m.y - 20, 'Boing!', '#fff3b0');
-      } else if (m.hurts && !(m.type === 'king' && m.resting)){ hurtPrincess(mcx); if (S.state !== 'play') return; }
+      } else if (m.hurts){ hurtPrincess(mcx); if (S.state !== 'play') return; }
     }
   }
 }
@@ -1065,7 +1089,7 @@ function updatePickups(dt){
       if (k.y > H + 60){ pickups.splice(i, 1); continue; }
     }
     if (k.x < camX - 200 || k.x > camX + W + 200) continue;
-    var box = { x: k.x - 14, y: k.y - 14, w: 28, h: 28 };
+    var box = { x: k.x - 20, y: k.y - 20, w: 40, h: 40 };
     var pb = { x: P.x - 6, y: P.y - 6, w: P.w + 12, h: P.h + 12 };
     if (overlap(box, pb)){ collect(k); pickups.splice(i, 1); }
   }
@@ -1084,11 +1108,7 @@ function updateWin(dt){
     var pet = PETS[(S.level - 1) % PETS.length]; if (profile && profile.pets.indexOf(pet[1]) < 0){ profile.pets.push(pet[1]); saveProfile(); }
     $('winPet').textContent = pet[1] + ' A ' + pet[0] + ' was hiding in the castle. It is your friend now!';
     $('winQ').textContent = S.levelQuestions ? 'Questions answered: ' + S.levelQuestions : '';
-    say('Hooray! You found a ' + pet[0] + '!');
-    var pet = PETS[(S.level - 1) % PETS.length]; if (profile && profile.pets.indexOf(pet[1]) < 0){ profile.pets.push(pet[1]); saveProfile(); }
-    $('winPet').textContent = pet[1] + ' A ' + pet[0] + ' was hiding in the castle. It is your friend now!';
-    $('winQ').textContent = S.levelQuestions ? 'Questions answered: ' + S.levelQuestions : '';
-    say('Hooray! You found a ' + pet[0] + '!');
+    say('Hooray! You did it, ' + playerName() + '! And look, a little ' + pet[0] + ' was hiding in the castle!');
     $('winCoins').textContent = S.levelCoins;
     $('winCandies').textContent = S.levelCandies;
     show('win');
@@ -1413,7 +1433,7 @@ function runLeg(u){
 }
 function runPose(p){
   var u = p / TAU, A = runLeg(u), B = runLeg(u + 0.5);
-  return pose({ hip: -33 - 3 * Math.cos((u - 0.3) * TAU), lA: A[0], kA: A[1], lB: B[0], kB: B[1], aA: -A[0] * 1.15, eA: 1.35, aB: -B[0] * 1.15, eB: 1.35, lean: -0.2 });
+  return pose({ hip: -33 - 3 * Math.cos((u - 0.3) * TAU), lA: A[0], kA: A[1], lB: B[0], kB: B[1], aA: -A[0] * 1.15, eA: 1.35, aB: -B[0] * 1.15, eB: 1.35, lean: 0.2 });
 }
 var OUT = 'rgba(40,20,50,0.35)';
 function seg(x0, y0, x1, y1, w, color){
@@ -1620,7 +1640,6 @@ function drawMonster(m){
     ctx.beginPath(); ctx.moveTo(-rx * 0.9, cy + ry * 0.1); ctx.lineTo(-rx * 1.25, cy + ry * 0.45 - armSwing); ctx.stroke();
   }
   if (ty === 'ghost'){ ctx.fillStyle = m.color; ellipse(-rx - 4, cy + 4 + Math.sin(t * 4) * 3, 7, 4); ellipse(rx + 4, cy + 4 + Math.cos(t * 4) * 3, 7, 4); }
-  if (ty === 'king' && m.resting){ ctx.font = '700 16px ' + FONT; ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.fillText('z z z', rx + 12, cy - ry - 4 + Math.sin(t * 3) * 3); ctx.fillStyle = '#9be7ff'; ellipse(rx * 0.8, cy - ry * 0.5 + (t * 20 % 12), 2.5, 4); }
   if (ty === 'king'){ ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.moveTo(-14, cy - ry + 2); ctx.lineTo(-14, cy - ry - 14); ctx.lineTo(-7, cy - ry - 6); ctx.lineTo(0, cy - ry - 18); ctx.lineTo(7, cy - ry - 6); ctx.lineTo(14, cy - ry - 14); ctx.lineTo(14, cy - ry + 2); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#ff4f6d'; circle(0, cy - ry - 6, 3); }
   if (ty === 'wise'){ ctx.fillStyle = '#2a1a3a'; ctx.fillRect(-16, cy - ry - 4, 32, 6); ctx.beginPath(); ctx.moveTo(-20, cy - ry - 4); ctx.lineTo(0, cy - ry - 16); ctx.lineTo(20, cy - ry - 4); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#ffd23f'; ctx.fillRect(18, cy - ry - 10, 2, 10); }
   // face
@@ -1640,15 +1659,22 @@ function drawPickup(k){
   var isPower = k.kind !== 'coin' && k.kind !== 'candy';
   if (isPower){ var g = ctx.createRadialGradient(0, 0, 4, 0, 0, 30); g.addColorStop(0, 'rgba(255,245,180,0.5)'); g.addColorStop(1, 'rgba(255,245,180,0)'); ctx.fillStyle = g; circle(0, 0, 30); }
   if (k.kind === 'coin'){
+    var gl = ctx.createRadialGradient(0, 0, 6, 0, 0, 34); gl.addColorStop(0, 'rgba(255,220,90,0.45)'); gl.addColorStop(1, 'rgba(255,220,90,0)'); ctx.fillStyle = gl; circle(0, 0, 34);
     var sx = Math.max(0.15, Math.abs(Math.cos(t * 3 + k.seed)));
-    ctx.scale(sx, 1);
-    ctx.fillStyle = '#d99a00'; circle(0, 0, 11); ctx.fillStyle = '#ffd23f'; circle(0, 0, 9.5); ctx.fillStyle = '#fff3b0'; star(0, 0, 6);
+    ctx.save(); ctx.scale(sx, 1);
+    ctx.fillStyle = '#c98a00'; circle(0, 0, 16); ctx.fillStyle = '#ffd23f'; circle(0, 0, 14); ctx.fillStyle = '#ffe680'; circle(-3, -3, 9); ctx.fillStyle = '#ffd23f'; circle(0, 0, 10.5); ctx.fillStyle = '#fff3b0'; star(0, 0, 8);
+    ctx.restore();
+    ctx.fillStyle = '#fff'; star(10 + Math.sin(t * 5 + k.seed) * 2, -12, 3, 4);
   } else if (k.kind === 'candy'){
+    var gc = ctx.createRadialGradient(0, 0, 6, 0, 0, 34); gc.addColorStop(0, 'rgba(255,143,200,0.4)'); gc.addColorStop(1, 'rgba(255,143,200,0)'); ctx.fillStyle = gc; circle(0, 0, 34);
+    ctx.save(); ctx.rotate(Math.sin(t * 2 + k.seed) * 0.2);
     ctx.fillStyle = '#ff8fc8';
-    ctx.beginPath(); ctx.moveTo(-10, 0); ctx.lineTo(-18, -7); ctx.lineTo(-18, 7); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(18, -7); ctx.lineTo(18, 7); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#ff6fae'; ellipse(0, 0, 11, 8);
-    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-4, -7); ctx.quadraticCurveTo(-1, 0, -4, 7); ctx.moveTo(4, -7); ctx.quadraticCurveTo(7, 0, 4, 7); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-13, 0); ctx.lineTo(-24, -10); ctx.lineTo(-22, 0); ctx.lineTo(-24, 10); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(13, 0); ctx.lineTo(24, -10); ctx.lineTo(22, 0); ctx.lineTo(24, 10); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#ff6fae'; ellipse(0, 0, 15, 11);
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(-6, -10); ctx.quadraticCurveTo(-2, 0, -6, 10); ctx.moveTo(6, -10); ctx.quadraticCurveTo(10, 0, 6, 10); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.7)'; ellipse(-4, -5, 4, 2.5);
+    ctx.restore();
   } else if (k.kind === 'axe'){ ctx.rotate(-0.3); ctx.translate(0, 16); drawWeapon('axe', 0); }
   else if (k.kind === 'bat'){ ctx.rotate(0.5); ctx.translate(0, 20); drawWeapon('bat', 0.32); }
   else if (k.kind === 'wand'){ ctx.rotate(-0.3); ctx.translate(0, 16); drawWeapon('wand', 0); }
@@ -1759,7 +1785,9 @@ function draw(){
   if (S.shake > 0) ctx.translate(rnd(-1, 1) * S.shake * 7, rnd(-1, 1) * S.shake * 7);
   drawSky(); drawBolts(); drawFarHills();
   if (L){
-    ctx.save(); ctx.translate(-Math.round(camX), -Math.round(camY));
+    ctx.save();
+    if (zoomT > 0){ var zq = Math.sin(Math.min(1, zoomT / 0.6) * Math.PI), zz = 1 + 0.5 * zq, zx = P.x + P.w / 2 - camX, zy = P.y + P.h / 2 - camY; ctx.translate(zx, zy); ctx.scale(zz, zz); ctx.translate(-zx, -zy); }
+    ctx.translate(-Math.round(camX), -Math.round(camY));
     drawWorld();
     if (camY < 0){ var thg = theme(); ctx.fillStyle = thg.dirt; ctx.fillRect(camX - 10, H, W + 20, -camY + 10); }
     for (var i = 0; i < pickups.length; i++){ var k = pickups[i]; if (k.x > camX - 40 && k.x < camX + W + 40) drawPickup(k); }
@@ -1772,6 +1800,7 @@ function draw(){
   drawWeather();
   ctx.restore();
   if (flash > 0.01){ ctx.fillStyle = 'rgba(235,245,255,' + (flash * 0.7).toFixed(3) + ')'; ctx.fillRect(0, 0, W, H); }
+  if (zoomT > 0){ var vq = Math.sin(Math.min(1, zoomT / 0.6) * Math.PI); var vg = ctx.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.85); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(20,10,50,' + (0.55 * vq).toFixed(2) + ')'); ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H); }
   drawBanners();
   drawHUD();
 }
@@ -1857,7 +1886,7 @@ function openQuiz(gate, mode){
   quiz.gate = gate; quiz.mode = mode || 'gate'; quiz.q = makeQuestion(); quiz.wrong = 0; quiz.done = false;
   S.state = 'quiz'; clearKeys(); touch = {}; pointers = {}; music.duck = 0.35;
   $('quizQ').textContent = quiz.q.q; $('quizPrompt').textContent = quiz.q.prompt || '';
-  var intro = mode === 'revive' ? pick(['Oh dear! Answer this and you get a heart.', 'Do not worry, ' + playerName() + '. Answer this for a new heart.']) : pick(['Hello ' + playerName() + '! Here is my question.', 'Stop please! One little question first.', 'Good to see you, ' + playerName() + '. Listen carefully.']);
+  var intro = mode === 'revive' ? pick(['Oh dear! Answer this and you get a heart!', 'No worries, ' + playerName() + '! Answer this for a new heart.']) : pick(['Hi ' + playerName() + '! Question time!', 'Ooh, a puzzle for you!', 'Ready, ' + playerName() + '? Here we go!', 'Stop! One little question first!']);
   $('quizIntro').textContent = intro;
   var box = $('quizOpts'); box.innerHTML = ''; box.className = 'quiz-opts' + (quiz.q.opts.length === 2 ? ' two' : '');
   quiz.q.opts.forEach(function(o, i){ var b = tileEl(o); b.addEventListener('click', function(){ answerQuiz(i, b); }); box.appendChild(b); });
@@ -1869,12 +1898,12 @@ function answerQuiz(i, btn){
   if (quiz.done) return;
   if (i === quiz.q.answer){
     quiz.done = true; btn.classList.add('right'); sfx.right(); S.levelQuestions++;
-    say(pick(['Yes! Well done, ' + playerName() + '!', 'That is right! Great job, ' + playerName() + '!', 'Correct! You are so clever!', 'Wonderful, ' + playerName() + '! You got it.', 'Super! High five!', 'Brilliant! I knew you could do it.']));
+    say(pick(['Yay! You did it!', 'Whoo hoo! Super smart, ' + playerName() + '!', 'Yes! High five!', 'That is it! Brilliant!', 'Wow! You are amazing, ' + playerName() + '!', 'Hooray! Off you go!']));
     setTimeout(closeQuiz, 1300);
   } else {
     quiz.wrong++; btn.classList.add('wrong'); sfx.wrong();
-    if (quiz.wrong >= 2){ var tiles = $('quizOpts').children; tiles[quiz.q.answer].classList.add('hint'); say('Let me help. The answer is ' + quiz.q.label + '. Tap the glowing one.'); }
-    else say(pick(['Oops, try again.', 'Not that one. Try again!', 'Almost! Have another look.']));
+    if (quiz.wrong >= 2){ var tiles = $('quizOpts').children; tiles[quiz.q.answer].classList.add('hint'); say('Let me help! It is ' + quiz.q.label + '. Tap the glowing one!'); }
+    else say(pick(['Hmm, not that one. Try again!', 'Oopsie! Have another look.', 'Almost! One more try!']));
   }
 }
 function closeQuiz(){
