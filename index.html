@@ -161,6 +161,7 @@
     <div><span class="quiz-q" id="quizQ"></span><button class="speak-btn" id="quizSpeak" title="Say it again">&#128264;</button></div>
     <div class="quiz-prompt" id="quizPrompt"></div>
     <div class="quiz-opts" id="quizOpts"></div>
+    <p class="small" id="quizMute" hidden>Sound is off. Turn it on in Settings to hear the question read aloud.</p>
   </div>
 </div>
 
@@ -556,7 +557,7 @@ var lastInput = 'pointer';
 var P = { x: 100, y: GY - 66, w: 26, h: 66, vx: 0, vy: 0, onGround: false, facing: 1, hearts: 3, power: null, powerT: 0, powerMax: 1,
   cd: 0, swing: 0, punch: 0, kick: 0, attackCd: 0, inv: 0, moving: false, ballCd: 0, dance: false, walk: 0, jumping: false, coyote: 0, jumpBuf: 0, crouch: false, guard: false };
 var L = null, monsters = [], pickups = [], balls = [], parts = [], bolts = [], weather = [];
-var camX = 0, camY = 0, zoomT = 0, flash = 0, nextBolt = 0, winT = 0, loseT = 0, sectionIdx = 0, pausedFrom = null;
+var camX = 0, camY = 0, zoomT = 0, flash = 0, fx = [], nextBolt = 0, winT = 0, loseT = 0, sectionIdx = 0, pausedFrom = null;
 var keys = {}, touch = {}, pointers = {}, prevJumpHeld = false, prevAttack = false;
 function clearKeys(){ for (var k in keys) delete keys[k]; }
 var winShown = false, loseShown = false;
@@ -608,9 +609,9 @@ function genLevel(lv){
   function monster(mx, type){ Lv.monsters.push(makeMonster(mx, type, lv)); }
   function grumpyOr(alt){ return lv >= 2 && Math.random() < Math.min(0.25 + lv * 0.1, 0.8) ? 'grumpy' : (alt === 'any' ? randType() : alt); }
   function gate(gx){
-    var g = { x: gx, y: 0, w: 14, h: GY, kind: 'gate', open: false, asked: false };
-    Lv.solids.push(g); Lv.gates.push(g);
-    var m = makeMonster(gx + 60, 'wise', lv); m.gate = g; m.dir = -1; Lv.monsters.push(m);
+    var g = { x: gx, y: 0, w: 14, h: GY, kind: 'gate', open: true, asked: false };
+    Lv.gates.push(g);
+    var m = makeMonster(gx + 60, 'wise', lv); m.gate = g; m.dir = -1; m.home = gx + 60; Lv.monsters.push(m);
   }
   var x = 0, i;
 
@@ -710,7 +711,7 @@ function startLevel(){
     if (sy === null){ monsters.splice(i, 1); continue; }
     m.y = sy - m.h; if (m.fly){ m.y = Math.max(130, sy - m.h - (m.type === 'birdie' ? 130 : 70)); m.baseY = m.y; }
   }
-  S.levelCoins = 0; S.levelCandies = 0; S.levelQuestions = 0; S.storm = 0; S.healCd = 0; camY = 0;
+  S.levelCoins = 0; S.levelCandies = 0; S.levelQuestions = 0; S.storm = 0; S.rainbow = 0; S.aurora = 0; S.healCd = 0; camY = 0; fx = [];
   P.x = 100; P.y = GY - P.h; P.vx = 0; P.vy = 0; P.hearts = maxHearts(); P.power = null; P.dance = false; P.inv = 1; P.cd = 0; P.swing = 0; P.punch = 0; P.kick = 0; P.attackCd = 0; P.facing = 1;
   balls = []; bolts = []; parts = []; flash = 0; camX = 0; sectionIdx = 0; touch = {}; pointers = {};
   makeWeather();
@@ -718,7 +719,7 @@ function startLevel(){
   hide('title'); hide('win'); hide('lose');
   var kind = isPrince() ? 'tunic' : 'dress';
   banner(S.level > 1 ? 'Level ' + S.level + ': a ' + outfit().name + ' ' + kind + '!' : 'Go, ' + playerName() + '!');
-  if (S.level === 1) say('Oh no! The Grumpy King took all the candies! Come on, ' + playerName() + '. Let us get them back!'); else say('Level ' + S.level + '! Wow, a ' + outfit().name + ' ' + kind + '. Go, ' + playerName() + '!');
+  if (S.level === 1) say('Oh no! The Grumpy King took all the candies! Come on, let us get them back!'); else say('Level ' + S.level + '! Wow, a ' + outfit().name + ' ' + kind + '. Here we go!');
 }
 
 /* ---------- particles ---------- */
@@ -772,7 +773,7 @@ function groundAhead(e, dir){
 /* ---------- combat ---------- */
 function hitMonster(m, dmg, kbx, kby, stun){
   if (m.type === 'wise') return;
-  m.hp -= dmg; m.hitT = 0.2; if (m.type === 'king'){ m.atk = null; m.atkT = 1.0; }
+  m.hp -= dmg; m.hitT = 0.2; if (m.type === 'king' && dmg >= 2){ m.atk = null; m.atkT = 1.0; }
   m.vx = kbx; m.vy = kby; m.stun = Math.max(m.stun, stun);
   burst(m.x + m.w / 2, m.y + m.h / 2, 7, '#ffffff', 'star');
   if (dmg >= 2) sfx.bigHit(); else sfx.hit();
@@ -785,7 +786,7 @@ function poof(m){
   floatText(cx, m.y - 20, m.type === 'king' ? 'The King ran away!' : 'Bye bye!', '#ffe9f5');
   sfx.poof();
   if (m.type === 'king'){ banner('The castle door is open!'); S.shake = 0.6; if (L.castleGate){ L.castleGate.open = true; sfx.gate(); }
-    if (L.pet){ L.pet.state = 'waiting'; L.pet.t = 0; say('The door is open! Someone is waiting for you, ' + playerName() + '!'); for (var c2 = 0; c2 < 10; c2++){ var ck = pickup('candy', L.goalX + 130, GY - 40, true); ck.vx = rnd(-260, -60); ck.vy = rnd(-420, -200); pickups.push(ck); } } }
+    if (L.pet){ L.pet.state = 'waiting'; L.pet.t = 0; say('The door is open! Someone is waiting for you!'); for (var c2 = 0; c2 < 10; c2++){ var ck = pickup('candy', L.goalX + 130, GY - 40, true); ck.vx = rnd(-260, -60); ck.vy = rnd(-420, -200); pickups.push(ck); } } }
   var n = m.type === 'king' ? 8 : m.type === 'grumpy' ? rndi(2, 3) : rndi(1, 2);
   for (var i = 0; i < n; i++){ var k = pickup(Math.random() < 0.6 ? 'coin' : 'candy', cx, cy, true); k.vx = rnd(-160, 160); k.vy = rnd(-420, -220); pickups.push(k); }
 }
@@ -860,11 +861,28 @@ function revive(){
   S.state = 'play'; prevJumpHeld = true; prevAttack = true;
 }
 
+/* ---------- celebrations per weather ---------- */
+var CONFETTI = ['#ff6fae', '#ffd23f', '#9be7ff', '#c3f584', '#c9a6ff', '#ffb08a'];
+function celebrate(name, dt){
+  if (name === 'day'){
+    if (Math.random() < dt * 40) fx.push({ kind: 'confetti', x: rnd(0, W), y: -10, vx: rnd(-30, 30), vy: rnd(80, 160), g: 0, spin: rnd(-6, 6), color: pick(CONFETTI), life: 6 });
+    if (Math.random() < dt * 1.5) fx.push({ kind: 'balloon', x: rnd(40, W - 40), y: H + 40, vx: rnd(-10, 10), vy: rnd(-70, -40), color: pick(CONFETTI), life: 12, o: rnd(0, TAU) });
+  } else if (name === 'sunset'){
+    if (Math.random() < dt * 1.6){ var bx = rnd(120, W - 120), by = rnd(60, 220), col = pick(CONFETTI); sfx.poof(); for (var i = 0; i < 40; i++){ var a = i / 40 * TAU, sp = rnd(120, 220); fx.push({ kind: 'spark', x: bx, y: by, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, g: 120, color: col, life: rnd(0.9, 1.5) }); } }
+  } else if (name === 'rain'){
+    S.rainbow = Math.min(1, (S.rainbow || 0) + dt * 0.4);
+    if (Math.random() < dt * 20) fx.push({ kind: 'confetti', x: rnd(0, W), y: -10, vx: rnd(-30, 30), vy: rnd(80, 160), g: 0, spin: rnd(-6, 6), color: pick(CONFETTI), life: 6 });
+  } else if (name === 'snow'){
+    S.aurora = Math.min(1, (S.aurora || 0) + dt * 0.5);
+    if (Math.random() < dt * 25) fx.push({ kind: 'twinkle', x: rnd(0, W), y: rnd(0, GY - 120), vx: 0, vy: 0, color: pick(['#fff', '#9be7ff', '#c9a6ff']), life: rnd(0.6, 1.4) });
+  }
+}
+
 /* ---------- win / lightning ---------- */
 function startWin(){
-  S.state = 'win'; winT = 0; nextBolt = 2.2; P.dance = true; P.power = null; P.vx = 0;
+  S.state = 'win'; winT = 0; nextBolt = 3.4; P.dance = false; P.power = null; P.vx = 0; fx = [];
   balls = [];
-  if (L.pet){ L.pet.state = 'saved'; L.pet.t = 0; banner('You rescued a ' + L.pet.name + '!'); for (var h = 0; h < 14; h++) parts.push({ x: P.x + P.w / 2 + rnd(-30, 30), y: P.y + rnd(-10, 40), vx: rnd(-40, 40), vy: rnd(-120, -40), life: 1.6, max: 1.6, color: '#ff5c8a', size: rnd(4, 7), kind: 'heart' }); }
+  if (L.pet){ L.pet.state = 'saved'; L.pet.t = 0; for (var h = 0; h < 14; h++) parts.push({ x: P.x + P.w / 2 + rnd(-30, 30), y: P.y + rnd(-10, 40), vx: rnd(-40, 40), vy: rnd(-120, -40), life: 1.6, max: 1.6, color: '#ff5c8a', size: rnd(4, 7), kind: 'heart' }); }
   sfx.win();
   saveTotal();
 }
@@ -1007,10 +1025,6 @@ function updatePlay(dt){
   if (S.state !== 'play') return;
   updatePickups(dt);
 
-  for (i = 0; i < L.gates.length; i++){
-    var gt = L.gates[i];
-    if (!gt.asked && !gt.open && P.onGround && P.x + P.w > gt.x - 70 && P.x < gt.x){ gt.asked = true; openQuiz(gt); return; }
-  }
   while (sectionIdx < L.sections.length && pcx > L.sections[sectionIdx].x){
     if (L.sections[sectionIdx].name){ banner(L.sections[sectionIdx].name); if (L.sections[sectionIdx].name.indexOf('King') >= 0) sfx.boss(); }
     sectionIdx++;
@@ -1033,9 +1047,17 @@ function updateMonsters(dt, idle){
     m.stun = Math.max(0, m.stun - dt);
     var mcx = m.x + m.w / 2;
     if (m.type === 'wise'){
-      m.vx = 0; m.dir = pcx < mcx ? -1 : 1;
-      if (m.gate && m.gate.open){ m.wave += dt; if (m.onGround && m.happy > 0){ m.vy = -260; } }
-      physics(m, dt, GRAV); continue;
+      m.dir = pcx < mcx ? -1 : 1;
+      var chasing = !idle && m.gate && !m.gate.asked && Math.abs(mcx - pcx) < 360 && Math.abs((m.y + m.h) - (P.y + P.h)) < 120;
+      m.lookT = Math.max(0, (m.lookT || 0) - dt);
+      if (chasing && P.y + P.h < m.y + 6 && Math.abs(mcx - pcx) < 70 && !m.lookT){ m.lookT = 0.75; floatText(mcx, m.y - 24, 'Hey!', '#fff3b0'); }
+      if (m.lookT > 0){ m.vx = 0; }
+      else if (chasing){ m.vx = m.dir * (150 + S.level * 6); if (m.onGround && !groundAhead(m, m.dir)) m.vx = 0; m.leg += Math.abs(m.vx) * dt * 0.14; }
+      else { var backHome = m.home - mcx; m.vx = Math.abs(backHome) > 12 ? (backHome > 0 ? 1 : -1) * 80 : 0; if (m.vx) m.leg += 12 * dt; }
+      if (m.gate && m.gate.asked){ m.wave += dt; if (m.onGround && m.happy > 0){ m.vy = -260; } }
+      physics(m, dt, GRAV);
+      if (chasing && overlap(P, m) && S.state === 'play'){ m.gate.asked = true; m.vx = 0; P.vx = 0; floatText(mcx, m.y - 24, 'Got you!', '#fff3b0'); openQuiz(m.gate); return; }
+      continue;
     }
     if (m.fly && m.dizzy <= 0){
       if (m.stun <= 0){ m.vx = m.dir * m.speed; if (Math.abs((m.x + m.w / 2) - m.home) > 260) m.dir = m.home > m.x + m.w / 2 ? 1 : -1; }
@@ -1112,19 +1134,25 @@ function updatePickups(dt){
 
 function updateWin(dt){
   winT += dt; nextBolt -= dt;
-  S.storm = Math.min(1, S.storm + dt * 0.6);
-  if (nextBolt <= 0){ spawnBolt(); if (Math.random() < 0.35) spawnBolt(); nextBolt = rnd(0.45, 1.2); }
-  P.facing = Math.sin(winT * 5) > 0 ? 1 : -1; P.vx = 0;
+  var th = theme();
   if (L.pet) L.pet.t += dt;
+  if (L.pet && L.pet.state === 'saved' && L.pet.t > 1.1 && L.pet.t - dt <= 1.1){ banner('You rescued a ' + L.pet.name + '!'); sfx.starPower(); for (var h = 0; h < 16; h++) parts.push({ x: P.x + P.w / 2 + rnd(-40, 40), y: P.y + rnd(-20, 40), vx: rnd(-50, 50), vy: rnd(-140, -50), life: 1.8, max: 1.8, color: '#ff5c8a', size: rnd(4, 8), kind: 'heart' }); }
+  if (winT > 2.0){
+    P.dance = true; P.facing = Math.sin(winT * 5) > 0 ? 1 : -1;
+    if (th.name === 'night'){ S.storm = Math.min(1, S.storm + dt * 0.6); if (nextBolt <= 0){ spawnBolt(); if (Math.random() < 0.35) spawnBolt(); nextBolt = rnd(0.45, 1.2); } }
+    else celebrate(th.name, dt);
+  } else P.facing = L.pet && L.pet.x < P.x ? -1 : 1;
+  P.vx = 0;
   physics(P, dt, GRAV);
   updatePickups(dt);
-  if (winT > 2.4 && !winShown){
+  for (var fi = fx.length - 1; fi >= 0; fi--){ var f = fx[fi]; f.life -= dt; f.x += f.vx * dt; f.y += f.vy * dt; f.vy += (f.g || 0) * dt; f.rot = (f.rot || 0) + (f.spin || 0) * dt; if (f.life <= 0) fx.splice(fi, 1); }
+  if (winT > 4.8 && !winShown){
     winShown = true;
     $('winLine').textContent = playerName() + ' made it home to the castle!';
     var pet = PETS[(S.level - 1) % PETS.length]; if (profile && profile.pets.indexOf(pet[1]) < 0){ profile.pets.push(pet[1]); saveProfile(); }
     $('winPet').textContent = pet[1] + ' A ' + pet[0] + ' was hiding in the castle. It is your friend now!';
     $('winQ').textContent = S.levelQuestions ? 'Questions answered: ' + S.levelQuestions : '';
-    say('Hooray! You did it, ' + playerName() + '! And look, a little ' + pet[0] + ' was hiding in the castle!');
+    say('Hooray! You did it! And look, a little ' + pet[0] + ' was hiding in the castle!');
     $('winCoins').textContent = S.levelCoins;
     $('winCandies').textContent = S.levelCandies;
     show('win');
@@ -1157,8 +1185,21 @@ function drawSky(){
     ellipse(cx, c.y, 50 * c.s, 18 * c.s); ellipse(cx - 30 * c.s, c.y + 6 * c.s, 35 * c.s, 14 * c.s); ellipse(cx + 32 * c.s, c.y + 4 * c.s, 38 * c.s, 15 * c.s);
   }
 }
+function drawCelebration(){
+  if (S.state !== 'win') return;
+  var th = theme();
+  if (S.rainbow > 0){ ctx.save(); ctx.globalAlpha = 0.75 * S.rainbow; var cols = ['#ff5c5c', '#ffa14a', '#ffe14a', '#6fd66f', '#5cb8ff', '#7a6fff', '#c56fff']; ctx.lineWidth = 12; for (var i = 0; i < cols.length; i++){ ctx.strokeStyle = cols[i]; ctx.beginPath(); ctx.arc(W / 2, GY + 40, 380 - i * 12, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke(); } ctx.restore(); }
+  if (S.aurora > 0){ ctx.save(); ctx.globalAlpha = 0.5 * S.aurora; var bands = ['#7dffb3', '#9be7ff', '#c9a6ff']; for (var b = 0; b < 3; b++){ ctx.fillStyle = bands[b]; ctx.beginPath(); for (var x = 0; x <= W; x += 20){ var y = 60 + b * 40 + Math.sin(x / 90 + S.time * 1.5 + b) * 22; if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); } for (x = W; x >= 0; x -= 20){ ctx.lineTo(x, 60 + b * 40 + Math.sin(x / 90 + S.time * 1.5 + b) * 22 + 60); } ctx.closePath(); ctx.fill(); } ctx.restore(); }
+  for (var k = 0; k < fx.length; k++){ var f = fx[k]; ctx.save(); ctx.globalAlpha = clamp(f.life, 0, 1);
+    if (f.kind === 'confetti'){ ctx.translate(f.x, f.y); ctx.rotate(f.rot || 0); ctx.fillStyle = f.color; ctx.fillRect(-5, -3, 10, 6); }
+    else if (f.kind === 'balloon'){ ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(f.x, f.y + 22); ctx.quadraticCurveTo(f.x + 6, f.y + 40, f.x, f.y + 56); ctx.stroke(); ctx.fillStyle = f.color; ellipse(f.x + Math.sin(S.time * 2 + f.o) * 4, f.y, 16, 20); ctx.fillStyle = 'rgba(255,255,255,0.5)'; ellipse(f.x - 5 + Math.sin(S.time * 2 + f.o) * 4, f.y - 7, 4, 7); }
+    else if (f.kind === 'spark'){ ctx.fillStyle = f.color; circle(f.x, f.y, 3.5); }
+    else if (f.kind === 'twinkle'){ ctx.fillStyle = f.color; star(f.x, f.y, 4 + Math.sin(f.life * 12) * 2, 4); }
+    ctx.restore(); }
+}
 function drawWeather(){
   var th = theme();
+  if (S.state === 'win' && th.rain) return;
   if (th.snow){ ctx.fillStyle = 'rgba(255,255,255,0.9)'; for (var i = 0; i < weather.length; i++){ var f = weather[i]; circle(f.x, f.y, f.r); } }
   else if (th.rain){ ctx.strokeStyle = 'rgba(200,220,255,0.45)'; ctx.lineWidth = 1.5; ctx.beginPath(); for (var j = 0; j < weather.length; j++){ var d = weather[j]; ctx.moveTo(d.x, d.y); ctx.lineTo(d.x - d.r * 0.25, d.y + d.r); } ctx.stroke(); }
 }
@@ -1262,12 +1303,15 @@ function drawWorld(){
     ctx.restore();
   }
   drawGoalCastle();
-  if (L.pet && L.pet.state !== 'hidden'){
-    var pt2 = L.pet, px2, py2;
+  if (L.pet && L.pet.state === 'waiting') drawPet();
+}
+function drawPet(){
+  var pt2 = L.pet, px2, py2;
+  if (pt2.state !== 'hidden'){
     if (pt2.state === 'waiting'){ px2 = pt2.x; py2 = GY - 6 - Math.abs(Math.sin(pt2.t * 5)) * 18; }
-    else { var k2 = Math.min(1, pt2.t / 0.8); px2 = pt2.x + (P.x + P.w / 2 + 36 * P.facing * -1 - pt2.x) * k2; py2 = GY - 6 - Math.abs(Math.sin(pt2.t * 6)) * 14; }
+    else { var k2 = Math.min(1, pt2.t / 1.1); if (k2 < 1){ px2 = pt2.x + (P.x + P.w / 2 - pt2.x) * k2; py2 = GY - 6 - Math.abs(Math.sin(pt2.t * 9)) * 16; } else { px2 = P.x + P.w / 2 + P.facing * 18; py2 = P.y + 34 - Math.abs(Math.sin(S.time * 8)) * (P.dance ? 8 : 0); } }
     ctx.save(); ctx.font = '40px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ellipse(px2, GY + 2, 18, 6);
+    if (pt2.state === 'waiting' || pt2.t < 1.1){ ctx.fillStyle = 'rgba(0,0,0,0.3)'; ellipse(px2, GY + 2, 18, 6); }
     ctx.fillText(pt2.emoji, px2, py2); ctx.restore();
     if (pt2.state === 'waiting'){ ctx.fillStyle = '#ff5c8a'; heart(px2 + 26, py2 - 44 + Math.sin(pt2.t * 4) * 4, 6); ctx.font = '700 16px ' + FONT; ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(40,20,80,0.9)'; ctx.lineWidth = 4; ctx.strokeText('Help!', px2, py2 - 56); ctx.fillText('Help!', px2, py2 - 56); }
   }
@@ -1350,7 +1394,7 @@ function drawGate(g){
   ctx.strokeStyle = '#c9a6ff'; ctx.lineWidth = 14; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x - 34, top + 4); ctx.quadraticCurveTo(x, top - 40, x + 34, top + 4); ctx.stroke();
   ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x - 34, top + 4); ctx.quadraticCurveTo(x, top - 40, x + 34, top + 4); ctx.stroke();
   ctx.fillStyle = '#ffd23f'; star(x, top - 24, 8);
-  if (!g.open){
+  if (!g.asked){
     ctx.strokeStyle = '#ff6fae'; ctx.lineWidth = 7; ctx.lineCap = 'round';
     for (var i = 0; i < 2; i++){ var yy = top + 66 + i * 40; ctx.beginPath(); ctx.moveTo(x - 30, yy); ctx.quadraticCurveTo(x, yy + 8 + Math.sin(S.time * 3 + i) * 3, x + 30, yy); ctx.stroke(); }
     ctx.fillStyle = '#fff'; rrect(x - 20, top + 14, 40, 30, 8); ctx.fillStyle = '#ff6fae'; rrect(x - 17, top + 17, 34, 24, 6);
@@ -1774,7 +1818,7 @@ function drawHUD(){
     ctx.fillStyle = 'rgba(255,255,255,0.25)'; rrect(tx, ty - 3, tw, 6, 3);
     var prog = clamp((P.x + P.w / 2) / L.goalX, 0, 1);
     ctx.fillStyle = '#ffd23f'; rrect(tx, ty - 3, Math.max(6, tw * prog), 6, 3);
-    for (i = 0; i < L.gates.length; i++){ var gp = tx + tw * clamp(L.gates[i].x / L.goalX, 0, 1); ctx.fillStyle = L.gates[i].open ? '#8ee3c3' : '#ff8fc8'; circle(gp, ty, 5); }
+    for (i = 0; i < L.gates.length; i++){ var gp = tx + tw * clamp(L.gates[i].x / L.goalX, 0, 1); ctx.fillStyle = L.gates[i].asked ? '#8ee3c3' : '#ff8fc8'; circle(gp, ty, 5); }
     ctx.fillStyle = '#7d69c0'; ctx.fillRect(tx + tw - 8, ty - 14, 16, 14); ctx.fillStyle = '#ff6fae'; ctx.beginPath(); ctx.moveTo(tx + tw - 10, ty - 14); ctx.lineTo(tx + tw, ty - 24); ctx.lineTo(tx + tw + 10, ty - 14); ctx.closePath(); ctx.fill();
     var mins = Math.ceil(playLeftMs() / 60000);
     if (!lock.free) hudPill(10, 46, 104, function(){ ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(0, 0, 9, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -6); ctx.moveTo(0, 0); ctx.lineTo(4, 2); ctx.stroke(); }, mins + ' min');
@@ -1810,7 +1854,7 @@ function hudPill(x, y, w, icon, n){
 function draw(){
   ctx.save();
   if (S.shake > 0) ctx.translate(rnd(-1, 1) * S.shake * 7, rnd(-1, 1) * S.shake * 7);
-  drawSky(); drawBolts(); drawFarHills();
+  drawSky(); drawBolts(); drawCelebration(); drawFarHills();
   if (L){
     ctx.save();
     if (zoomT > 0){ var zq = Math.sin(Math.min(1, zoomT / 0.6) * Math.PI), zz = 1 + 0.5 * zq, zx = P.x + P.w / 2 - camX, zy = P.y + P.h / 2 - camY; ctx.translate(zx, zy); ctx.scale(zz, zz); ctx.translate(-zx, -zy); }
@@ -1820,6 +1864,7 @@ function draw(){
     for (var i = 0; i < pickups.length; i++){ var k = pickups[i]; if (k.x > camX - 40 && k.x < camX + W + 40) drawPickup(k); }
     for (i = 0; i < monsters.length; i++){ var m = monsters[i]; if (m.x + m.w > camX - 60 && m.x < camX + W + 60) drawMonster(m); }
     drawPlayer();
+    if (L.pet && L.pet.state === 'saved') drawPet();
     for (i = 0; i < balls.length; i++) drawBall(balls[i]);
     drawParticles();
     ctx.restore();
@@ -1863,7 +1908,7 @@ function qColor(){ var c = pickN(COLORS, 4), a = pick(c); return fromValues('Whi
 function qPick(cat){ var c = pickN(cat, 4), a = pick(c); return fromValues('Which one is the ' + a[0] + '?', '', c, a, function(v){ return { emoji: v[1] }; }); }
 function qCount(max){ var n = rndi(1, max), k = rndi(0, CUTE.length - 1), s = ''; for (var i = 0; i < n; i++) s += CUTE[k]; var vals = numOptions(n, 1, Math.max(5, max), 4); return fromValues('How many ' + CUTE_NAME[k] + ' do you see?', s, vals, n, function(v){ return { num: v }; }); }
 function qShape(){ var c = pickN(SHAPES, 4), a = pick(c); return fromValues('Which one is the ' + a[0] + '?', '', c, a, function(v){ return { shape: v[1] }; }); }
-function qBigger(){ var e = pick(THINGS.concat(ANIMALS)), big = Math.random() < 0.5; var vals = ['the big one', 'the small one']; return fromValues('Which ' + e[0] + ' is ' + (big ? 'bigger' : 'smaller') + '?', '', vals, big ? 'the big one' : 'the small one', function(v){ return { emoji: e[1], size: v === 'the big one' ? 1.4 : 0.6 }; }); }
+function qBigger(){ var e = pick(THINGS.concat(ANIMALS)); var vals = ['the big one', 'the small one']; return fromValues('Which ' + e[0] + ' is bigger?', '', vals, 'the big one', function(v){ return { emoji: e[1], size: v === 'the big one' ? 1.4 : 0.6 }; }); }
 function qAdd(max){ var a = rndi(1, max - 1), b = rndi(1, max - a), k = rndi(0, CUTE.length - 1), s = ''; for (var i = 0; i < a; i++) s += CUTE[k]; s += ' + '; for (i = 0; i < b; i++) s += CUTE[k]; if (max > 12) s = a + ' + ' + b; return fromValues('What is ' + a + ' plus ' + b + '?', s, numOptions(a + b, Math.max(1, a + b - 4), a + b + 4, 4), a + b, function(v){ return { num: v }; }); }
 function qSub(max){ var a = rndi(3, max), b = rndi(1, a - 1); return fromValues('What is ' + a + ' minus ' + b + '?', a + ' − ' + b, numOptions(a - b, Math.max(0, a - b - 4), a - b + 4, 4), a - b, function(v){ return { num: v }; }); }
 function qMul(max){ var a = rndi(2, max), b = rndi(2, max); return fromValues('What is ' + a + ' times ' + b + '?', a + ' × ' + b, numOptions(a * b, Math.max(1, a * b - 6), a * b + 6, 4), a * b, function(v){ return { num: v }; }); }
@@ -1872,7 +1917,7 @@ function qLetter(){ var L = 'ABCDEFGHJKLMNPRST'.split(''), c = pickN(L, 4), a = 
 function qFirstLetter(){ var e = pick(FRUITS.concat(ANIMALS)), f = e[0][0].toUpperCase(), others = pickN('ABCDEGHKLMPRSTW'.replace(f, '').split(''), 3); return fromValues('Which letter does ' + e[0] + ' start with?', e[1], [f].concat(others), f, function(v){ return { text: v }; }); }
 function qNext(max){ var n = rndi(1, max - 1); return fromValues('What number comes after ' + n + '?', n + ' , ?', numOptions(n + 1, Math.max(1, n - 2), n + 4, 4), n + 1, function(v){ return { num: v }; }); }
 function qPattern(){ var e = pickN(CUTE, 3); return fromValues('What comes next in the pattern?', e[0] + ' ' + e[1] + ' ' + e[0] + ' ' + e[1] + ' ' + e[0] + ' ?', [e[1], e[0], e[2]], e[1], function(v){ return { emoji: v }; }); }
-function qCompare(max){ var a = rndi(1, max), b = rndi(1, max); while (b === a) b = rndi(1, max); var big = Math.random() < 0.5; return fromValues('Which number is ' + (big ? 'bigger' : 'smaller') + '?', '', [a, b], big ? Math.max(a, b) : Math.min(a, b), function(v){ return { num: v }; }); }
+function qCompare(max){ var a = rndi(1, max), b = rndi(1, max); while (b === a) b = rndi(1, max); return fromValues('Which number is bigger?', '', [a, b], Math.max(a, b), function(v){ return { num: v }; }); }
 function qOddEven(){ var even = Math.random() < 0.5, vals = [], target; while (vals.length < 4){ var v = rndi(2, 30); if (vals.indexOf(v) >= 0) continue; var isE = v % 2 === 0; if (target == null && isE === even){ target = v; vals.push(v); } else if (isE !== even) vals.push(v); } return fromValues('Which number is ' + (even ? 'even' : 'odd') + '?', '', vals, target, function(v){ return { num: v }; }); }
 function misspell(w){
   var arr = w.split(''), k = rndi(0, 2), i;
@@ -1887,7 +1932,7 @@ function qOpposite(){ var p = pick(OPPOSITES), others = pickN(OPPOSITES.filter(f
 
 var TIERS = [
   [qColor, function(){ return qPick(ANIMALS); }, function(){ return qPick(FRUITS); }, function(){ return qPick(THINGS); }, function(){ return qCount(5); }, qShape, qBigger],
-  [qColor, function(){ return qPick(ANIMALS); }, function(){ return qCount(10); }, qShape, function(){ return qAdd(10); }, qLetter, qFirstLetter, function(){ return qNext(10); }, qPattern, function(){ return qCompare(10); }],
+  [qColor, function(){ return qPick(ANIMALS); }, function(){ return qCount(10); }, qShape, function(){ return qAdd(10); }, qFirstLetter, function(){ return qNext(10); }, qPattern, function(){ return qCompare(10); }],
   [function(){ return qAdd(20); }, function(){ return qSub(20); }, function(){ return qMul(5); }, function(){ return qCompare(50); }, qOddEven, function(){ return qSpell(WORDS_SHORT); }, qClock, qPattern, qFirstLetter, function(){ return qNext(100); }],
   [function(){ return qAdd(100); }, function(){ return qSub(100); }, function(){ return qMul(10); }, qDiv, function(){ return qSpell(WORDS_LONG); }, qOpposite, qClock, qOddEven]
 ];
@@ -1913,7 +1958,8 @@ function openQuiz(gate, mode){
   quiz.gate = gate; quiz.mode = mode || 'gate'; quiz.q = makeQuestion(); quiz.wrong = 0; quiz.done = false;
   S.state = 'quiz'; clearKeys(); touch = {}; pointers = {}; music.duck = 0.35;
   $('quizQ').textContent = quiz.q.q; $('quizPrompt').textContent = quiz.q.prompt || '';
-  var intro = mode === 'revive' ? pick(['Oh dear! Answer this and you get a heart!', 'No worries, ' + playerName() + '! Answer this for a new heart.']) : pick(['Hi ' + playerName() + '! Question time!', 'Ooh, a puzzle for you!', 'Ready, ' + playerName() + '? Here we go!', 'Stop! One little question first!']);
+  var intro = mode === 'revive' ? pick(['Oh dear! Answer this and you get a heart!', 'No worries! Answer this for a new heart.']) : pick(['Got you! Question time!', 'Ooh, a puzzle for you!', 'Ready? Here we go!', 'Caught you! One little question first!']);
+  $('quizMute').hidden = settings.speak && settings.sound;
   $('quizIntro').textContent = intro;
   var box = $('quizOpts'); box.innerHTML = ''; box.className = 'quiz-opts' + (quiz.q.opts.length === 2 ? ' two' : '');
   quiz.q.opts.forEach(function(o, i){ var b = tileEl(o); b.addEventListener('click', function(){ answerQuiz(i, b); }); box.appendChild(b); });
@@ -1925,7 +1971,7 @@ function answerQuiz(i, btn){
   if (quiz.done) return;
   if (i === quiz.q.answer){
     quiz.done = true; btn.classList.add('right'); sfx.right(); S.levelQuestions++;
-    say(pick(['Yay! You did it!', 'Whoo hoo! Super smart, ' + playerName() + '!', 'Yes! High five!', 'That is it! Brilliant!', 'Wow! You are amazing, ' + playerName() + '!', 'Hooray! Off you go!']));
+    say(pick(['Yay! You did it!', 'Whoo hoo! Super smart!', 'Yes! High five!', 'That is it! Brilliant!', 'Wow! You are amazing!', 'Hooray! Off you go!']));
     setTimeout(closeQuiz, 1300);
   } else {
     quiz.wrong++; btn.classList.add('wrong'); sfx.wrong();
