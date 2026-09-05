@@ -295,19 +295,17 @@
       <div><button class="link-btn" id="apForgot">Forgot the PIN?</button></div>
     </div>
     <div id="apPhone" hidden>
-      <p class="small">Read this request code to your grown-up. They type it into Parent Key on their phone.</p>
-      <div class="code" id="apReq"></div>
-      <p class="small">Then type the 6-digit approval code they give you:</p>
+      <p class="small">Ask your grown-up for the 6-digit code from Parent Key on their phone, and type it here:</p>
       <div class="pin-dots" id="apPhoneDots"></div>
       <div class="pad" id="apPhonePad"></div>
       <div><button class="link-btn" id="apPairHelpBtn">How does this work?</button></div>
       <div id="apPairHelp" hidden><div class="guide">
           <b>1. On this device (the child's):</b> a grown-up opens Settings, Grown-ups, turns on "Parent's phone" and notes the 8-digit pairing code.<br>
           <b>2. On your own phone:</b> install MyRush from the same link, open it, tap Settings, then Grown-ups, then "Parent Key: I am on the grown-up's phone". Type the pairing code once. It stays saved.<br>
-          <b>3. Every day:</b> when the child's free time is over, the child taps "Grown-up: give more time" and "Code from phone". A 4-digit request code appears. The child reads it to you.<br>
-          <b>4. On your phone:</b> open Parent Key, type the request code, tap the minutes you allow. A 6-digit approval code appears.<br>
-          <b>5. The child types the approval code</b> on this device and plays for that many minutes.<br>
-          Works without internet. Each code works once. "New pairing code" here breaks the old pairing, so type the new one into your phone again.
+          <b>3. Every day:</b> when the child's free time is over, the child taps "Grown-up: give more time" and "Code from phone".<br>
+          <b>4. On your phone:</b> open Parent Key and tap the minutes you allow. A 6-digit code appears. Read it to the child, from any room.<br>
+          <b>5. The child types the code</b> on this device and plays for that many minutes.<br>
+          Works without internet. Each code works once and changes every 10 minutes, so an old code cannot be reused. Both phones need the right time set. "New pairing code" here breaks the old pairing, so type the new one into your phone again.
         </div></div>
     </div>
     <div id="apTime" hidden>
@@ -359,10 +357,10 @@
         <div id="pairHelp" hidden><div class="guide">
           <b>1. On this device (the child's):</b> you are here. Tap "Parent's phone" above and note the 8-digit pairing code.<br>
           <b>2. On your own phone:</b> install MyRush from the same link, open it, tap Settings, then Grown-ups, then "Parent Key: I am on the grown-up's phone". Type the pairing code once. It stays saved.<br>
-          <b>3. Every day:</b> when the child's free time is over, the child taps "Grown-up: give more time" and "Code from phone". A 4-digit request code appears. The child reads it to you.<br>
-          <b>4. On your phone:</b> open Parent Key, type the request code, tap the minutes you allow. A 6-digit approval code appears.<br>
-          <b>5. The child types the approval code</b> on this device and plays for that many minutes.<br>
-          Works without internet. Each code works once. "New pairing code" here breaks the old pairing, so type the new one into your phone again.
+          <b>3. Every day:</b> when the child's free time is over, the child taps "Grown-up: give more time" and "Code from phone".<br>
+          <b>4. On your phone:</b> open Parent Key and tap the minutes you allow. A 6-digit code appears. Read it to the child, from any room.<br>
+          <b>5. The child types the code</b> on this device and plays for that many minutes.<br>
+          Works without internet. Each code works once and changes every 10 minutes, so an old code cannot be reused. Both phones need the right time set. "New pairing code" here breaks the old pairing, so type the new one into your phone again.
         </div></div>
       </div>
       <p class="small">Give extra time now:</p>
@@ -383,8 +381,6 @@
       <h3>Parent Key</h3>
       <p class="small">Use this on the grown-up's own phone. Type the pairing code from the child's device once. It stays saved here.</p>
       <p><input type="text" id="pairInput" inputmode="numeric" maxlength="9" placeholder="Pairing code (8 digits)" autocomplete="off"></p>
-      <p class="small">Request code shown on the child's screen:</p>
-      <p><input type="text" id="reqInput" inputmode="numeric" maxlength="5" placeholder="Request code (4 digits)" autocomplete="off"></p>
       <p class="small">Allow the child to play for:</p>
       <div class="row" id="keyGrant"><button data-min="10">10 min</button><button data-min="15">15 min</button><button data-min="20">20 min</button><button data-min="30">30 min</button><button data-min="45">45 min</button><button data-min="60">60 min</button></div>
       <div class="code" id="keyOut">------</div>
@@ -513,6 +509,7 @@ if (lock.daily == null) lock.daily = 20;
 function saveLock(){ save('ppc-time', lock); }
 var GRANTS = [10, 15, 20, 30, 45, 60];
 function strHash(str){ var h1 = 0xdeadbeef ^ 7, h2 = 0x41c6ce57 ^ 7; for (var i = 0; i < str.length; i++){ var ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); } h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909); return 4294967296 * (2097151 & h2) + (h1 >>> 0); }
+function timeSlot(){ return Math.floor(Date.now() / 600000); }
 function codeFor(secret, req, min){ return ('000000' + (strHash(String(secret) + ':' + String(req) + ':' + String(min)) % 1000000)).slice(-6); }
 function digits(n){ var s = ''; for (var i = 0; i < n; i++) s += String(Math.floor(Math.random() * 10)); if (s.charAt(0) === '0') s = '7' + s.slice(1); return s; }
 function saveSettings(){ save('ppc-settings', settings); }
@@ -2588,7 +2585,7 @@ function apMethod(m){
   var bs = $('apMethods').children; for (var i = 0; i < bs.length; i++) bs[i].classList.toggle('on', bs[i].getAttribute('data-m') === m);
   if (m === 'sum'){ ap.sum = newSum(); show('apSum'); renderAp(); }
   else if (m === 'pin'){ show('apPin'); renderAp(); }
-  else { lock.req = digits(4); saveLock(); $('apReq').textContent = lock.req.slice(0, 2) + ' ' + lock.req.slice(2); show('apPhone'); renderAp(); }
+  else { show('apPhone'); renderAp(); }
 }
 function apLen(){ return ap.method === 'sum' ? ap.sum.ans.length : ap.method === 'pin' ? 4 : 6; }
 function renderAp(msg){
@@ -2609,7 +2606,8 @@ function apComplete(){
   if (ap.method === 'sum'){ if (ap.buf === ap.sum.ans){ apPassed(); return; } ap.sum = newSum(); ap.buf = ''; renderAp('Not right. Try this one: what is ' + ap.sum.a + ' times ' + ap.sum.b + '?'); }
   else if (ap.method === 'pin'){ if (ap.buf === lock.pin){ clearFails(); apPassed(); return; } noteFail(); ap.buf = ''; renderAp(failsBlockedMs() > 0 ? waitText() : 'Wrong PIN. Try again.'); }
   else {
-    for (var i = 0; i < GRANTS.length; i++){ if (codeFor(lock.secret, lock.req, GRANTS[i]) === ap.buf){ clearFails(); grant(GRANTS[i]); return; } }
+    var slot = timeSlot(), used = lock.usedCodes || [];
+    for (var i = 0; i < GRANTS.length; i++) for (var ds = -1; ds <= 1; ds++){ var key2 = (slot + ds) + ':' + GRANTS[i]; if (codeFor(lock.secret, slot + ds, GRANTS[i]) === ap.buf){ if (used.indexOf(key2) >= 0){ ap.buf = ''; renderAp('That code was already used. Ask for a new one.'); return; } used.push(key2); lock.usedCodes = used.slice(-12); clearFails(); grant(GRANTS[i]); return; } }
     noteFail(); ap.buf = ''; renderAp(failsBlockedMs() > 0 ? waitText() : 'That code is not right'); setTimeout(function(){ if (ap.method === 'phone') renderAp(); }, 1400);
   }
 }
@@ -2766,14 +2764,16 @@ $('grownupsBtn3').addEventListener('click', function(){ hide('settings'); openPa
 
 /* ---------- Parent Key (runs on the grown-up's own phone) ---------- */
 var pkey = load('ppc-parentkey', { secret: '' });
-function openParentKey(){ areas('parentKey'); $('pairInput').value = pkey.secret || ''; $('reqInput').value = ''; $('keyOut').textContent = '------'; $('keyMsg').textContent = ''; }
-function keyCompute(min){
-  var sec = $('pairInput').value.replace(/\D/g, ''), req = $('reqInput').value.replace(/\D/g, '');
-  if (sec.length !== 8){ $('keyMsg').textContent = 'Type the 8-digit pairing code from the child\u2019s device first.'; return; }
-  if (req.length !== 4){ $('keyMsg').textContent = 'Type the 4-digit request code shown on the child\u2019s screen.'; return; }
-  pkey.secret = sec; save('ppc-parentkey', pkey);
-  var c = codeFor(sec, req, min); $('keyOut').textContent = c.slice(0, 3) + ' ' + c.slice(3);
-  $('keyMsg').textContent = 'Read this code to the child, or type it on their device. It gives ' + min + ' minutes.';
+var keyMin = 0, keyTimer = null;
+function openParentKey(){ areas('parentKey'); $('pairInput').value = pkey.secret || ''; keyMin = 0; $('keyOut').textContent = '------'; $('keyMsg').textContent = 'Type the pairing code once, then tap the minutes you allow.'; if (keyTimer) clearInterval(keyTimer); keyTimer = setInterval(function(){ if ($('parentKey').hidden || $('parent').hidden){ clearInterval(keyTimer); keyTimer = null; return; } if (keyMin) keyCompute(keyMin, true); }, 1000); }
+function keyCompute(min, quiet){
+  var sec = $('pairInput').value.replace(/\D/g, '');
+  if (sec.length !== 8){ $('keyMsg').textContent = 'Type the 8-digit pairing code from the child’s device first.'; return; }
+  if (sec !== pkey.secret){ pkey.secret = sec; save('ppc-parentkey', pkey); }
+  keyMin = min;
+  var slot = timeSlot(), c = codeFor(sec, slot, min), left = Math.ceil(((slot + 1) * 600000 - Date.now()) / 60000);
+  $('keyOut').textContent = c.slice(0, 3) + ' ' + c.slice(3);
+  $('keyMsg').textContent = 'Read this code to the child. It gives ' + min + ' minutes and works once. A new code appears in ' + left + ' minute' + (left === 1 ? '' : 's') + '.';
   var kb = $('keyGrant').children; for (var i = 0; i < kb.length; i++) kb[i].classList.toggle('on', parseInt(kb[i].getAttribute('data-min'), 10) === min);
 }
 $('parentKeyBtn').addEventListener('click', openParentKey);
