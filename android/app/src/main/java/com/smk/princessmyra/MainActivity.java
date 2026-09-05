@@ -8,15 +8,50 @@ import android.view.WindowManager;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.webkit.JavascriptInterface;
+import android.speech.tts.TextToSpeech;
+import java.util.Locale;
 
 public class MainActivity extends Activity {
     private WebView web;
+    private TextToSpeech tts;
+    private boolean ttsReady = false;
+
+    public class TtsBridge {
+        @JavascriptInterface
+        public void speak(String text, String lang, float pitch, float rate) {
+            if (tts == null || !ttsReady) return;
+            try {
+                tts.stop();
+                Locale loc = Locale.forLanguageTag(lang == null ? "en-IN" : lang);
+                int r = tts.setLanguage(loc);
+                if (r == TextToSpeech.LANG_MISSING_DATA || r == TextToSpeech.LANG_NOT_SUPPORTED) tts.setLanguage(Locale.forLanguageTag("en-IN"));
+                tts.setPitch(pitch);
+                tts.setSpeechRate(rate);
+                tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "myrush");
+            } catch (Exception e) { }
+        }
+        @JavascriptInterface
+        public void stop() { try { if (tts != null) tts.stop(); } catch (Exception e) { } }
+        @JavascriptInterface
+        public boolean available(String lang) {
+            if (tts == null || !ttsReady) return false;
+            try {
+                int r = tts.isLanguageAvailable(Locale.forLanguageTag(lang));
+                return r >= TextToSpeech.LANG_AVAILABLE;
+            } catch (Exception e) { return false; }
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
+
+        tts = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
+            @Override public void onInit(int status) { ttsReady = status == TextToSpeech.SUCCESS; }
+        });
 
         web = new WebView(this);
         WebSettings s = web.getSettings();
@@ -30,6 +65,7 @@ public class MainActivity extends Activity {
         s.setBuiltInZoomControls(false);
         s.setDisplayZoomControls(false);
         web.setWebChromeClient(new WebChromeClient());
+        web.addJavascriptInterface(new TtsBridge(), "AndroidTTS");
         web.setBackgroundColor(0xFF0B0A2A);
         web.setOverScrollMode(View.OVER_SCROLL_NEVER);
         web.setVerticalScrollBarEnabled(false);
@@ -63,7 +99,14 @@ public class MainActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
+        if (tts != null) tts.stop();
         if (web != null) web.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (tts != null) { tts.stop(); tts.shutdown(); }
+        super.onDestroy();
     }
 
     @Override

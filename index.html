@@ -540,6 +540,7 @@ var music = {
   },
   tick: function(){
     if (!AC) return;
+    if (AC.state === 'suspended' && !document.hidden && (S.state === 'play' || S.state === 'title' || S.state === 'quiz')) { try { AC.resume(); } catch (e) {} }
     var want = (settings.music && !document.hidden && (S.state === 'play' || S.state === 'title' || S.state === 'win' || S.state === 'quiz' || S.state === 'shop')) ? 0.055 * this.duck : 0;
     this.gainNode.gain.setTargetAtTime(want, AC.currentTime, 0.2);
     var key = (S.state === 'play' && P.power) ? 'power' : settings.tune; if (key !== this.key){ this.key = key; this.step = 0; this.nextT = Math.max(this.nextT, AC.currentTime + 0.05); }
@@ -570,6 +571,11 @@ var music = {
 
 document.addEventListener('visibilitychange', function(){ try { if (AC){ if (document.hidden) AC.suspend(); else AC.resume(); } if (document.hidden && window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {} });
 window.addEventListener('pagehide', function(){ try { if (AC) AC.suspend(); } catch (e) {} });
+window.addEventListener('pageshow', function(){ try { if (AC && !document.hidden) AC.resume(); } catch (e) {} });
+function wakeAudio(){ try { if (AC && AC.state !== 'running' && !document.hidden) AC.resume(); } catch (e) {} }
+document.addEventListener('pointerdown', wakeAudio, true);
+document.addEventListener('touchstart', wakeAudio, true);
+document.addEventListener('keydown', wakeAudio, true);
 
 /* ---------- speech ---------- */
 /* ---------- languages: spoken lines and question text (UI stays English) ---------- */
@@ -649,8 +655,20 @@ function voiceFor(prefix){
   for (var pi = 0; pi < pref.length; pi++) for (var i = 0; i < list.length; i++) if (pref[pi].test(list[i].name) || pref[pi].test(list[i].lang)) return list[i];
   return list[0];
 }
+function ttsLangCode(l){ return l === 'hi' ? 'hi-IN' : l === 'mr' ? 'mr-IN' : 'en-IN'; }
+function nativeTTS(){ return window.AndroidTTS && typeof window.AndroidTTS.speak === 'function' ? window.AndroidTTS : null; }
 function say(text, en){
-  if (!settings.speak || !window.speechSynthesis) return;
+  if (!settings.speak) return;
+  var nt = nativeTTS();
+  if (nt){
+    try {
+      var l0 = lang(), spoken0 = String(text), code = ttsLangCode(l0);
+      if (l0 !== 'en' && en !== undefined && en !== text){ var ok = false; try { ok = !!nt.available(code); } catch (e) {} if (!ok){ spoken0 = String(en); code = 'en-IN'; speechNote = l0; } else speechNote = ''; }
+      nt.speak(spoken0, code, 1.1, 0.95);
+    } catch (e) {}
+    return;
+  }
+  if (!window.speechSynthesis) return;
   try {
     speechSynthesis.cancel();
     var l = lang(), v = null, spoken = String(text);
@@ -2415,7 +2433,8 @@ function renderSettings(){
   $('speakOn').classList.toggle('on', settings.speak); $('speakOff').classList.toggle('on', !settings.speak);
   var lr = $('langRow').children; for (i = 0; i < lr.length; i++) lr[i].classList.toggle('on', lr[i].getAttribute('data-lang') === settings.lang);
   var note = '';
-  if (settings.lang !== 'en' && window.speechSynthesis){ var lv = voiceFor(settings.lang); if (!lv) note = 'No ' + (settings.lang === 'hi' ? 'Hindi' : 'Marathi') + ' voice is installed on this device, so questions are shown in ' + (settings.lang === 'hi' ? 'Hindi' : 'Marathi') + ' but read aloud in English. On Android, open Settings, then Google Text-to-speech, and install the ' + (settings.lang === 'hi' ? 'Hindi' : 'Marathi') + ' voice.'; else note = 'Voice: ' + lv.name; }
+  if (nativeTTS()){ var ok2 = true; try { ok2 = settings.lang === 'en' || !!nativeTTS().available(ttsLangCode(settings.lang)); } catch (e) {} note = ok2 ? 'Voice: Android text-to-speech' : 'No ' + (settings.lang === 'hi' ? 'Hindi' : 'Marathi') + ' voice is installed on this device, so questions are shown in ' + (settings.lang === 'hi' ? 'Hindi' : 'Marathi') + ' but read aloud in English. Open Android Settings, then Google Text-to-speech, and install the voice.'; }
+  else if (settings.lang !== 'en' && window.speechSynthesis){ var lv = voiceFor(settings.lang); if (!lv) note = 'No ' + (settings.lang === 'hi' ? 'Hindi' : 'Marathi') + ' voice is installed on this device, so questions are shown in ' + (settings.lang === 'hi' ? 'Hindi' : 'Marathi') + ' but read aloud in English. On Android, open Settings, then Google Text-to-speech, and install the ' + (settings.lang === 'hi' ? 'Hindi' : 'Marathi') + ' voice.'; else note = 'Voice: ' + lv.name; }
   else if (window.speechSynthesis){ var ev = voiceFor('en'); if (ev) note = 'Voice: ' + ev.name + (/en[-_]IN/i.test(ev.lang) ? ' (Indian English)' : ''); }
   $('langNote').textContent = note;
 }
