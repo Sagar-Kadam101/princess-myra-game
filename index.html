@@ -459,7 +459,7 @@ function diffMul(){ return settings.diff === 'gentle' ? 0.8 : settings.diff === 
 function gentle(){ return settings.diff === 'gentle'; }
 var profiles = load('ppc-profiles', null), curIdx = load('ppc-current', 0), profile = null;
 function newId(){ return 'p' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36); }
-function migrateProfile(p){ if (!p) return; if (!p.id) p.id = newId(); if (!p.pets) p.pets = []; if (!p.owned) p.owned = [0]; if (p.wear == null) p.wear = 'level'; if (!p.maxHearts) p.maxHearts = 3; if (!p.crowns) p.crowns = [0]; if (p.crown == null) p.crown = 0; if (p.eye == null) p.eye = 0; if (p.shoe == null) p.shoe = 0; if (!p.ownedHair) p.ownedHair = [0, 1, 2, 3, 4]; if (!p.ownedEye) p.ownedEye = [0, 1]; if (!p.ownedShoe) p.ownedShoe = [0]; if (!p.stickers) p.stickers = [];  }
+function migrateProfile(p){ if (!p) return; if (!p.id) p.id = newId(); if (p.skin == null || p.skin > 2) p.skin = Math.min(2, p.skin || 0); if (!p.pets) p.pets = []; if (!p.owned) p.owned = [0]; if (p.wear == null) p.wear = 'level'; if (!p.maxHearts) p.maxHearts = 3; if (!p.crowns) p.crowns = [0]; if (p.crown == null) p.crown = 0; if (p.eye == null) p.eye = 0; if (p.shoe == null) p.shoe = 0; if (!p.ownedHair) p.ownedHair = [0, 1, 2, 3, 4]; if (!p.ownedEye) p.ownedEye = [0, 1]; if (!p.ownedShoe) p.ownedShoe = [0]; if (!p.stickers) p.stickers = [];  }
 if (!profiles){
   var legacy = load('ppc-profile', null); profiles = [];
   if (legacy){ legacy.id = 'p0'; profiles.push(legacy); var lt = load('ppc-total', null), ls = load('ppc-stats', null); if (lt) save('ppc-total-p0', lt); if (ls) save('ppc-stats-p0', ls); }
@@ -783,13 +783,13 @@ var OUTFITS = [
 ];
 function outfit(){ if (profile && typeof profile.wear === 'number') return OUTFITS[profile.wear % OUTFITS.length]; return OUTFITS[(S.level - 1) % OUTFITS.length]; }
 function maxHearts(){ return profile && profile.maxHearts ? profile.maxHearts : 3; }
-var SKINS = ['#ffe0bd', '#f1c27d', '#c68642', '#8d5524'];
+var SKINS = ['#ffe0bd', '#f1c27d', '#c68642'];
 var HAIRS = ['#2b1b0e', '#6b3e26', '#c9843f', '#f5d76e', '#d94f3d', '#ff6fae', '#5cb8ff', '#b48cff', '#5fd6b0'];
 var HAIR_NAMES = ['Black', 'Brown', 'Auburn', 'Blonde', 'Red', 'Pink', 'Sky blue', 'Lavender', 'Mint'];
 var HAIR_PRICE = [0, 0, 0, 0, 0, 25, 25, 25, 25];
 var EYES = [['Dark', '#2a1a3a', 0], ['Brown', '#6b3a1e', 0], ['Blue', '#2f7fd6', 20], ['Green', '#2f9e5b', 20], ['Hazel', '#9a7b2f', 20], ['Violet', '#7a4fd6', 30]];
 var SHOES = [['Match the dress', null, 0], ['Red', '#e53935', 15], ['Pink', '#ff6fae', 15], ['Blue', '#1e88e5', 15], ['White', '#fafafa', 15], ['Gold', '#ffd23f', 25], ['Purple', '#8e24aa', 25]];
-var SKIN_NAMES = ['Light', 'Tan', 'Brown', 'Deep'];
+var SKIN_NAMES = ['Light', 'Tan', 'Brown'];
 var STICKERS = [
   { id: 'first-win', name: 'First castle', how: 'Win your first level', kind: 'crown' },
   { id: 'win-5', name: 'Five castles', how: 'Win five levels', kind: 'star', n: 5 },
@@ -2766,7 +2766,7 @@ function renderLook(){
   drawPreview();
 }
 function turntable(cv, look){
-  var w = cv.width, h = cv.height, ang = S.time * 1.1, cs = Math.cos(ang), fx = Math.max(0.14, Math.abs(cs));
+  var w = cv.width, h = cv.height, ang = S.time * 0.45, cs = Math.cos(ang), fx = Math.max(0.14, Math.abs(cs));
   ctx.clearRect(0, 0, w, h);
   var g2 = ctx.createRadialGradient(w / 2, h - 14, 4, w / 2, h - 14, w * 0.36); g2.addColorStop(0, 'rgba(255,224,150,0.55)'); g2.addColorStop(1, 'rgba(255,224,150,0)'); ctx.fillStyle = g2; ctx.beginPath(); ctx.ellipse(w / 2, h - 14, w * 0.36, w * 0.11, 0, 0, TAU); ctx.fill();
   ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.beginPath(); ctx.ellipse(w / 2, h - 12, w * 0.26, w * 0.07, 0, 0, TAU); ctx.fill();
