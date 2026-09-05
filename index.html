@@ -485,7 +485,7 @@ function strHash(str){ var h1 = 0xdeadbeef ^ 7, h2 = 0x41c6ce57 ^ 7; for (var i 
 function codeFor(secret, req, min){ return ('000000' + (strHash(String(secret) + ':' + String(req) + ':' + String(min)) % 1000000)).slice(-6); }
 function digits(n){ var s = ''; for (var i = 0; i < n; i++) s += String(Math.floor(Math.random() * 10)); if (s.charAt(0) === '0') s = '7' + s.slice(1); return s; }
 function saveSettings(){ save('ppc-settings', settings); }
-function saveProfile(){ if (!profile) return; if (!profile.id) profile.id = newId(); if (profiles.indexOf(profile) < 0){ if (curIdx < profiles.length) profiles[curIdx] = profile; else { profiles.push(profile); curIdx = profiles.length - 1; } } save('ppc-profiles', profiles); save('ppc-current', curIdx); }
+function saveProfile(){ if (!profile) return; migrateProfile(profile); if (profiles.indexOf(profile) < 0){ if (curIdx < profiles.length) profiles[curIdx] = profile; else { profiles.push(profile); curIdx = profiles.length - 1; } } save('ppc-profiles', profiles); save('ppc-current', curIdx); }
 function fixStats(){ if (!stats.types) stats.types = {}; if (stats.streak == null) stats.streak = 0; if (stats.kicks == null) stats.kicks = 0; if (!stats.retry) stats.retry = []; }
 function switchProfile(i){ if (i < 0 || i >= profiles.length) return; curIdx = i; profile = profiles[i]; migrateProfile(profile); save('ppc-current', i); total = load('ppc-total-' + pid(), { coins: 0, candies: 0 }); stats = load('ppc-stats-' + pid(), defaultStats()); fixStats(); }
 function removeProfile(i){ if (profiles.length < 2 || i < 0 || i >= profiles.length) return; var gone = profiles[i]; profiles.splice(i, 1); try { localStorage.removeItem('ppc-total-' + gone.id); localStorage.removeItem('ppc-stats-' + gone.id); } catch (e) {} save('ppc-profiles', profiles); switchProfile(Math.min(i, profiles.length - 1)); }
@@ -1112,7 +1112,7 @@ function hurtPrincess(fromX){
   if (P.hearts <= 0) outOfHearts();
 }
 function award(id){
-  if (!profile || hasSticker(id)) return; var st = stickerById(id); if (!st) return;
+  if (!profile) return; if (!profile.stickers) profile.stickers = []; if (hasSticker(id)) return; var st = stickerById(id); if (!st) return;
   profile.stickers.push(id); saveProfile(); S.newStickers.push(id);
   banner('New sticker: ' + st.name + '!'); sfx.starPower();
 }
@@ -2790,6 +2790,7 @@ function drawPreviewOld(){
 $('lookNext').addEventListener('click', function(){ setupStep(4); });
 $('dobDone').addEventListener('click', function(){
   draft.dob = $('dobInput').value || '';
+  migrateProfile(draft);
   if (addingPlayer){ addingPlayer = false; draft.id = newId(); profiles.push(draft); switchProfile(profiles.length - 1); } else { profile = draft; saveProfile(); }
   hide('setup');
   S.state = 'title'; refreshTitle(); show('title'); sayP('hello');
