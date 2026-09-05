@@ -85,7 +85,21 @@
   #winPet .bigpet { font-size:clamp(44px,8vw,64px); line-height:1.1; display:inline-block; }
   .notice { background:rgba(255,92,138,0.25); border:2px solid #ff8fc8; border-radius:14px; padding:6px 12px; margin:8px 0; font-size:clamp(12px,2.2vw,16px); }
   .mcanvas { display:block; margin:0 auto 4px; }
-  .shop { text-align:left; max-height:52vh; overflow:auto; }
+  .shop { text-align:left; max-height:44vh; overflow:auto; }
+  .big-btn.alt { background:linear-gradient(#ff9fd0,#ff6fae); border-bottom-color:#c94a86; color:#fff; font-size:clamp(16px,3vw,22px); padding:7px 24px; margin-top:8px; }
+  #shop .panel { width:min(94vw,600px); box-sizing:border-box; }
+  .dress { display:flex; gap:14px; align-items:flex-start; text-align:left; width:100%; }
+  .dress .preview { margin:0; flex:0 0 auto; }
+  .dressright { flex:1; min-width:0; }
+  .tabs { margin:4px 0 8px; }
+  .tabs button { height:34px; font-size:14px; padding:0 10px; }
+  .swrow { display:flex; flex-wrap:wrap; gap:14px 12px; padding:8px 4px 14px; justify-content:flex-start; overflow-x:hidden; }
+  .sw { position:relative; width:46px; height:46px; border-radius:50%; border:3px solid rgba(255,255,255,0.4); cursor:pointer; pointer-events:auto; flex:0 0 auto; margin-bottom:14px; color:#fff; }
+  .sw.on { border-color:#ffd23f; box-shadow:0 0 0 3px rgba(255,210,63,0.55); }
+  .sw.locked { opacity:0.8; }
+  .sw .swlab { position:absolute; top:100%; left:50%; transform:translateX(-50%); font-size:11px; white-space:nowrap; color:#fff; margin-top:2px; text-shadow:0 1px 2px rgba(0,0,0,0.6); }
+  .sw .price { position:absolute; top:-9px; right:-10px; background:#ffd23f; color:#5a1d3f; font-size:11px; font-weight:700; border-radius:9px; padding:1px 6px; line-height:14px; }
+  @media (max-width: 560px){ .dress { flex-direction:column; align-items:center; } .dress .preview { width:140px; height:117px; } }
   .shoprow { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.12); font-size:clamp(14px,2.4vw,18px); }
   .shopleft { display:flex; align-items:center; gap:10px; }
   .shopsw { width:26px; height:26px; border-radius:50%; border:2px solid rgba(255,255,255,0.5); flex:none; display:inline-block; }
@@ -106,7 +120,8 @@
     <p class="small" id="lockLine"></p>
     <div id="resetNotice" class="notice" hidden></div>
     <button class="big-btn" id="playBtn">Start</button>
-    <div><button class="link-btn" id="shopBtn">Treasure Shop</button><button class="link-btn" id="settingsBtn">Settings</button></div>
+    <button class="big-btn alt" id="shopBtn">Dress-up Room</button>
+    <div><button class="link-btn" id="settingsBtn">Settings</button></div>
   </div>
 </div>
 
@@ -140,11 +155,17 @@
 </div>
 
 <div id="shop" class="overlay solid" hidden>
-  <div class="panel" style="min-width:min(88vw,480px)">
-    <h2>Treasure Shop</h2>
-    <p class="small" id="shopCoins"></p>
-    <div id="shopItems" class="shop"></div>
-    <button class="big-btn" id="shopClose">Close</button>
+  <div class="panel" style="min-width:min(94vw,600px)">
+    <h2>Dress-up Room</h2>
+    <div class="dress">
+      <canvas id="shopPreview" class="preview" width="180" height="150"></canvas>
+      <div class="dressright">
+        <p class="small" id="shopCoins"></p>
+        <div class="row tabs" id="shopTabs"><button data-tab="dress">Dress</button><button data-tab="hair">Hair</button><button data-tab="eyes">Eyes</button><button data-tab="crown">Crown</button><button data-tab="shoes">Shoes</button><button data-tab="skin">Skin</button><button data-tab="hearts">Hearts</button></div>
+        <div id="shopItems" class="shop swrow"></div>
+      </div>
+    </div>
+    <button class="big-btn" id="shopClose">Done</button>
   </div>
 </div>
 
@@ -393,7 +414,7 @@ if (!settings.diff) settings.diff = 'normal';
 function diffMul(){ return settings.diff === 'gentle' ? 0.8 : settings.diff === 'brave' ? 1.2 : 1; }
 function gentle(){ return settings.diff === 'gentle'; }
 var profile = load('ppc-profile', null);
-if (profile){ if (!profile.pets) profile.pets = []; if (!profile.owned) profile.owned = [0]; if (profile.wear == null) profile.wear = 'level'; if (!profile.maxHearts) profile.maxHearts = 3; if (!profile.crowns) profile.crowns = [0]; if (profile.crown == null) profile.crown = 0; }
+if (profile){ if (!profile.pets) profile.pets = []; if (!profile.owned) profile.owned = [0]; if (profile.wear == null) profile.wear = 'level'; if (!profile.maxHearts) profile.maxHearts = 3; if (!profile.crowns) profile.crowns = [0]; if (profile.crown == null) profile.crown = 0; if (profile.eye == null) profile.eye = 0; if (profile.shoe == null) profile.shoe = 0; if (!profile.ownedHair) profile.ownedHair = [0, 1, 2, 3, 4]; if (!profile.ownedEye) profile.ownedEye = [0, 1]; if (!profile.ownedShoe) profile.ownedShoe = [0]; }
 var total = load('ppc-total', { coins: 0, candies: 0 });
 var stats = load('ppc-stats', { played: 0, day: '', today: 0, best: 1, wins: 0, asked: 0, right: 0, types: {} });
 if (!stats.types) stats.types = {};
@@ -702,7 +723,12 @@ var OUTFITS = [
 function outfit(){ if (profile && typeof profile.wear === 'number') return OUTFITS[profile.wear % OUTFITS.length]; return OUTFITS[(S.level - 1) % OUTFITS.length]; }
 function maxHearts(){ return profile && profile.maxHearts ? profile.maxHearts : 3; }
 var SKINS = ['#ffe0bd', '#f1c27d', '#c68642', '#8d5524'];
-var HAIRS = ['#2b1b0e', '#6b3e26', '#c9843f', '#f5d76e', '#d94f3d'];
+var HAIRS = ['#2b1b0e', '#6b3e26', '#c9843f', '#f5d76e', '#d94f3d', '#ff6fae', '#5cb8ff', '#b48cff', '#5fd6b0'];
+var HAIR_NAMES = ['Black', 'Brown', 'Auburn', 'Blonde', 'Red', 'Pink', 'Sky blue', 'Lavender', 'Mint'];
+var HAIR_PRICE = [0, 0, 0, 0, 0, 25, 25, 25, 25];
+var EYES = [['Dark', '#2a1a3a', 0], ['Brown', '#6b3a1e', 0], ['Blue', '#2f7fd6', 20], ['Green', '#2f9e5b', 20], ['Hazel', '#9a7b2f', 20], ['Violet', '#7a4fd6', 30]];
+var SHOES = [['Match the dress', null, 0], ['Red', '#e53935', 15], ['Pink', '#ff6fae', 15], ['Blue', '#1e88e5', 15], ['White', '#fafafa', 15], ['Gold', '#ffd23f', 25], ['Purple', '#8e24aa', 25]];
+var SKIN_NAMES = ['Light', 'Tan', 'Brown', 'Deep'];
 var THEMES = [
   { name: 'night', top: '#070620', mid: '#2a1a55', bot: '#4a2a78', stars: true, moon: true, hills: ['#1e1447', '#2a1c5e'], tree: '#231652', grass: '#2f6b3a', grassTop: '#3f8a4c', dirt: '#3b2b45', cloud: 'rgba(95,65,150,0.75)', water: '#1b2a5a', dark: true },
   { name: 'day', top: '#4fb8ff', mid: '#8fd3ff', bot: '#d9f1ff', sun: [180, 90], hills: ['#5aa86a', '#7cc47f'], tree: '#3f8a4c', grass: '#58b368', grassTop: '#86d98e', dirt: '#8a5a3a', cloud: 'rgba(255,255,255,0.92)', water: '#3d8fd4' },
@@ -1710,7 +1736,7 @@ function drawCharacter(o){
   else P0 = POSE_IDLE;
   var fighting = guard || o.kick > 0 || o.punch > 0;
   var TH = 18, SH = 16, UA = 13, FA = 12, hipX = 5.5, legW = prince ? 8 : 7.5;
-  var legCol = prince ? D.dark : '#fbf2ff', shoe = prince ? '#4a2c17' : D.dark;
+  var legCol = prince ? D.dark : '#fbf2ff', shoe = o.shoe || (prince ? '#4a2c17' : D.dark);
   function legPts(x0, th, kb){ var kx = x0 + Math.sin(th) * TH, ky = P0.hip + Math.cos(th) * TH, sa = th - kb; return [kx, ky, kx + Math.sin(sa) * SH, ky + Math.cos(sa) * SH, sa]; }
   var LA = legPts(hipX, P0.lA, P0.kA), LB = legPts(-hipX, P0.lB, P0.kB);
   var ground = !inAir && !o.dance;
@@ -1762,7 +1788,8 @@ function drawCharacter(o){
   else { outlined(function(){ ctx.beginPath(); ctx.moveTo(-11, cy0 + 2); ctx.lineTo(-11, cy0 - 8); ctx.lineTo(-5.5, cy0 - 3); ctx.lineTo(0, cy0 - 13); ctx.lineTo(5.5, cy0 - 3); ctx.lineTo(11, cy0 - 8); ctx.lineTo(11, cy0 + 2); ctx.closePath(); }, cc);
     ctx.fillStyle = crown === 3 ? '#fff3b0' : '#ff4f6d'; circle(0, cy0 - 3, 2.2); ctx.fillStyle = '#5cc8ff'; circle(-6.5, cy0 - 2.5, 1.5); circle(6.5, cy0 - 2.5, 1.5); }
   var ex1 = -6.5, ex2 = 6.5, ey = hy + 1;
-  ctx.fillStyle = '#2a1a3a'; ellipse(ex1, ey, prince ? 2.8 : 3.1, prince ? 3.4 : 3.9); ellipse(ex2, ey, prince ? 2.8 : 3.1, prince ? 3.4 : 3.9);
+  ctx.fillStyle = o.eye || '#2a1a3a'; ellipse(ex1, ey, prince ? 2.8 : 3.1, prince ? 3.4 : 3.9); ellipse(ex2, ey, prince ? 2.8 : 3.1, prince ? 3.4 : 3.9);
+  if (o.eye && o.eye !== '#2a1a3a'){ ctx.fillStyle = '#1a1024'; ellipse(ex1, ey + 0.4, prince ? 1.4 : 1.6, prince ? 1.9 : 2.2); ellipse(ex2, ey + 0.4, prince ? 1.4 : 1.6, prince ? 1.9 : 2.2); }
   ctx.fillStyle = '#fff'; circle(ex1 - 1.1, ey - 1.3, 1.3); circle(ex2 - 1.1, ey - 1.3, 1.3); circle(ex1 + 1.1, ey + 1.6, 0.6); circle(ex2 + 1.1, ey + 1.6, 0.6);
   ctx.strokeStyle = shade(hairC, -0.15); ctx.lineWidth = prince ? 2 : 1.4; ctx.lineCap = 'round';
   if (prince){ ctx.beginPath(); ctx.moveTo(-10, ey - 7); ctx.lineTo(-3, ey - 8); ctx.moveTo(3, ey - 8); ctx.lineTo(10, ey - 7); ctx.stroke(); }
@@ -1780,7 +1807,7 @@ function drawCharacter(o){
 }
 
 function playerLook(){
-  return { gender: profile ? profile.gender : 'princess', skin: profile ? SKINS[profile.skin || 0] : SKINS[0], hair: profile ? HAIRS[profile.hair == null ? 1 : profile.hair] : HAIRS[1], style: profile ? (profile.style || 0) : 0, outfit: outfit(), crown: profile ? (profile.crown || 0) : 0 };
+  return { gender: profile ? profile.gender : 'princess', skin: profile ? SKINS[profile.skin || 0] : SKINS[0], hair: profile ? HAIRS[profile.hair == null ? 1 : profile.hair] : HAIRS[1], style: profile ? (profile.style || 0) : 0, outfit: outfit(), crown: profile ? (profile.crown || 0) : 0, eye: profile ? EYES[profile.eye || 0][1] : EYES[0][1], shoe: profile ? SHOES[profile.shoe || 0][1] : null };
 }
 function drawPlayer(){
   var t = S.time, cx = P.x + P.w / 2, fy = P.y + P.h;
@@ -2458,7 +2485,7 @@ $('settingsBtn').addEventListener('click', openSettings);
 /* ---------- character setup ---------- */
 var draft = null, previewCtx = $('preview').getContext('2d');
 function openSetup(){
-  draft = profile ? JSON.parse(JSON.stringify(profile)) : { gender: 'princess', name: '', skin: 0, hair: 1, style: 0, dob: '', owned: [0], wear: 'level', maxHearts: 3, crowns: [0], crown: 0 };
+  draft = profile ? JSON.parse(JSON.stringify(profile)) : { gender: 'princess', name: '', skin: 0, hair: 1, style: 0, dob: '', owned: [0], wear: 'level', maxHearts: 3, crowns: [0], crown: 0, eye: 0, shoe: 0, ownedHair: [0, 1, 2, 3, 4], ownedEye: [0, 1], ownedShoe: [0] };
   hide('title'); ['setupStep1', 'setupStep2', 'setupStep3', 'setupStep4'].forEach(hide); show('setupStep1'); show('setup');
 }
 function setupStep(n){ ['setupStep1', 'setupStep2', 'setupStep3', 'setupStep4'].forEach(hide); show('setupStep' + n); if (n === 2){ $('nameInput').value = draft.name || ''; setTimeout(function(){ $('nameInput').focus(); }, 100); } if (n === 3) renderLook(); if (n === 4) $('dobInput').value = draft.dob || ''; }
@@ -2467,7 +2494,7 @@ $('nameNext').addEventListener('click', function(){ var v = $('nameInput').value
 $('nameInput').addEventListener('keydown', function(e){ if (e.key === 'Enter') $('nameNext').click(); });
 function renderLook(){
   var sk = $('skinSw'); sk.innerHTML = ''; SKINS.forEach(function(c, i){ var d = document.createElement('div'); d.className = 'swatch' + (draft.skin === i ? ' on' : ''); d.style.background = c; d.addEventListener('click', function(){ draft.skin = i; renderLook(); }); sk.appendChild(d); });
-  var hs = $('hairSw'); hs.innerHTML = ''; HAIRS.forEach(function(c, i){ var d = document.createElement('div'); d.className = 'swatch' + (draft.hair === i ? ' on' : ''); d.style.background = c; d.addEventListener('click', function(){ draft.hair = i; renderLook(); }); hs.appendChild(d); });
+  var hs = $('hairSw'); hs.innerHTML = ''; HAIRS.forEach(function(c, i){ if (HAIR_PRICE[i] > 0) return; var d = document.createElement('div'); d.className = 'swatch' + (draft.hair === i ? ' on' : ''); d.style.background = c; d.addEventListener('click', function(){ draft.hair = i; renderLook(); }); hs.appendChild(d); });
   var sr = $('styleRow'); sr.innerHTML = '';
   (draft.gender === 'prince' ? ['Neat', 'Spiky'] : ['Long', 'Ponytail']).forEach(function(n, i){ var b = document.createElement('button'); b.textContent = n; b.className = draft.style === i ? 'on' : ''; b.addEventListener('click', function(){ draft.style = i; renderLook(); }); sr.appendChild(b); });
   drawPreview();
@@ -2475,7 +2502,7 @@ function renderLook(){
 function drawPreview(){
   var saved = ctx; ctx = previewCtx; ctx.clearRect(0, 0, 180, 150);
   ctx.save(); ctx.translate(90, 138);
-  drawCharacter({ gender: draft.gender, skin: SKINS[draft.skin], hair: HAIRS[draft.hair], style: draft.style, outfit: OUTFITS[typeof draft.wear === 'number' ? draft.wear : 0], crown: draft.crown || 0, facing: 1, run: 0, inAir: false, crouch: false, dance: false, p: 0, punch: 0, kick: 0, power: null, t: S.time });
+  drawCharacter({ gender: draft.gender, skin: SKINS[draft.skin], hair: HAIRS[draft.hair], style: draft.style, outfit: OUTFITS[typeof draft.wear === 'number' ? draft.wear : 0], crown: draft.crown || 0, eye: EYES[draft.eye || 0][1], shoe: SHOES[draft.shoe || 0][1], facing: 1, run: 0, inAir: false, crouch: false, dance: false, p: 0, punch: 0, kick: 0, power: null, t: S.time });
   ctx.restore(); ctx = saved;
 }
 $('lookNext').addEventListener('click', function(){ setupStep(4); });
@@ -2559,24 +2586,59 @@ function shopRow(label, sub, price, owned, wearing, onBuy, onWear, swatch){
   else { b.textContent = 'Owned'; b.disabled = true; }
   row.appendChild(b); return row;
 }
-function renderShop(){
-  $('shopCoins').textContent = 'You have ' + total.coins + ' coins. Win coins in the game to buy more.';
-  var box = $('shopItems'); box.innerHTML = '';
-  var kind = isPrince() ? 'tunic' : 'dress';
-  box.appendChild(shopRow('Surprise outfit', 'A different ' + kind + ' every level', 0, true, profile.wear === 'level', null, function(){ profile.wear = 'level'; saveProfile(); }, null));
-  OUTFITS.forEach(function(o, i){
-    var owned = profile.owned.indexOf(i) >= 0;
-    box.appendChild(shopRow(o.name.charAt(0).toUpperCase() + o.name.slice(1) + ' ' + kind, owned ? 'Yours' : 'Unlock this colour', 30 + i * 5, owned, profile.wear === i,
-      function(){ profile.owned.push(i); profile.wear = i; saveProfile(); }, function(){ profile.wear = i; saveProfile(); }, o.dress));
-  });
-  CROWNS.forEach(function(c, i){
-    var owned = profile.crowns.indexOf(i) >= 0;
-    box.appendChild(shopRow(c.name, i === 0 ? 'Yours' : 'A new crown to wear', c.price, owned, profile.crown === i,
-      function(){ profile.crowns.push(i); profile.crown = i; saveProfile(); }, function(){ profile.crown = i; saveProfile(); }, ['#ffd23f', '#e0e6ef', '#ff8fc8', '#ff4f6d'][i]));
-  });
-  if (profile.maxHearts < 5) box.appendChild(shopRow('Extra heart', 'Start every level with ' + (profile.maxHearts + 1) + ' hearts', 50 + (profile.maxHearts - 3) * 40, false, false, function(){ profile.maxHearts++; saveProfile(); }, null, '#ff5c8a'));
-  else box.appendChild(shopRow('Extra heart', 'You have the most hearts already', 0, true, false, null, null, '#ff5c8a'));
+var shopTab = 'dress', shopCtx = $('shopPreview').getContext('2d'), shopMsg = '';
+function drawShopPreview(){
+  var saved = ctx; ctx = shopCtx; ctx.clearRect(0, 0, 180, 150);
+  ctx.save(); ctx.translate(90, 138);
+  var lk = playerLook(); lk.facing = 1; lk.run = 0; lk.inAir = false; lk.crouch = false; lk.dance = true; lk.p = 0; lk.punch = 0; lk.kick = 0; lk.power = null; lk.t = S.time;
+  drawCharacter(lk);
+  ctx.restore(); ctx = saved;
 }
+function swatch(box, o){
+  // o: { color, label, price, owned, on, gradient, onPick }
+  var d = document.createElement('div'); d.className = 'sw' + (o.on ? ' on' : '') + (o.owned ? '' : ' locked'); d.title = o.label;
+  d.style.background = o.gradient || o.color || 'rgba(255,255,255,0.15)';
+  if (o.emoji){ d.textContent = o.emoji; d.style.fontSize = '24px'; d.style.display = 'flex'; d.style.alignItems = 'center'; d.style.justifyContent = 'center'; }
+  var lab = document.createElement('span'); lab.className = 'swlab'; lab.textContent = o.label; d.appendChild(lab);
+  if (!o.owned){ var pr = document.createElement('span'); pr.className = 'price'; pr.textContent = o.price; d.appendChild(pr); }
+  d.addEventListener('click', function(){
+    if (o.owned){ o.onPick(); sfx.coin(); }
+    else if (total.coins >= o.price){ total.coins -= o.price; saveTotal(); o.onBuy(); o.onPick(); sfx.power(); shopMsg = 'Yay! ' + o.label + ' is yours!'; }
+    else { shopMsg = 'You need ' + (o.price - total.coins) + ' more coins for ' + o.label + '. Collect coins in the game!'; sfx.wrong(); }
+    saveProfile(); renderShop();
+  });
+  box.appendChild(d);
+}
+function renderShop(){
+  $('shopCoins').innerHTML = '<b>' + total.coins + '</b> coins' + (shopMsg ? ' <span class="small">' + shopMsg + '</span>' : '');
+  shopMsg = '';
+  var tabs = $('shopTabs').children; for (var i = 0; i < tabs.length; i++) tabs[i].classList.toggle('on', tabs[i].getAttribute('data-tab') === shopTab);
+  var box = $('shopItems'); box.innerHTML = ''; box.className = 'shop swrow';
+  var kind = isPrince() ? 'tunic' : 'dress';
+  if (shopTab === 'dress'){
+    swatch(box, { gradient: 'linear-gradient(135deg,#ff6fae,#ffd23f,#5fd6b0,#5cb8ff,#b48cff)', label: 'Surprise', price: 0, owned: true, on: profile.wear === 'level', onPick: function(){ profile.wear = 'level'; } });
+    OUTFITS.forEach(function(o, i){ swatch(box, { color: o.dress, label: o.name.charAt(0).toUpperCase() + o.name.slice(1), price: 30 + i * 5, owned: profile.owned.indexOf(i) >= 0, on: profile.wear === i, onBuy: function(){ profile.owned.push(i); }, onPick: function(){ profile.wear = i; } }); });
+  } else if (shopTab === 'hair'){
+    var styles = isPrince() ? ['Neat', 'Spiky'] : ['Long', 'Ponytail'];
+    styles.forEach(function(n, i){ swatch(box, { emoji: i === 0 ? '\uD83D\uDC69' : '\uD83D\uDC67', label: n, price: 0, owned: true, on: (profile.style || 0) === i, onPick: function(){ profile.style = i; } }); });
+    HAIRS.forEach(function(c, i){ swatch(box, { color: c, label: HAIR_NAMES[i], price: HAIR_PRICE[i], owned: profile.ownedHair.indexOf(i) >= 0, on: (profile.hair == null ? 1 : profile.hair) === i, onBuy: function(){ profile.ownedHair.push(i); }, onPick: function(){ profile.hair = i; } }); });
+  } else if (shopTab === 'eyes'){
+    EYES.forEach(function(e, i){ swatch(box, { gradient: 'radial-gradient(circle at 50% 50%, #1a1024 0 22%, ' + e[1] + ' 24% 60%, #fff 62%)', label: e[0], price: e[2], owned: profile.ownedEye.indexOf(i) >= 0, on: (profile.eye || 0) === i, onBuy: function(){ profile.ownedEye.push(i); }, onPick: function(){ profile.eye = i; } }); });
+  } else if (shopTab === 'crown'){
+    CROWNS.forEach(function(c, i){ swatch(box, { color: ['#ffd23f', '#e0e6ef', '#ff8fc8', '#ff4f6d'][i], label: c.name.replace(' crown', ''), price: c.price, owned: profile.crowns.indexOf(i) >= 0, on: (profile.crown || 0) === i, onBuy: function(){ profile.crowns.push(i); }, onPick: function(){ profile.crown = i; } }); });
+  } else if (shopTab === 'shoes'){
+    SHOES.forEach(function(s, i){ swatch(box, { color: s[1], gradient: s[1] ? null : 'linear-gradient(135deg,#ff6fae,#b48cff)', label: s[0] === 'Match the dress' ? (isPrince() ? 'Brown' : 'Match') : s[0], price: s[2], owned: profile.ownedShoe.indexOf(i) >= 0, on: (profile.shoe || 0) === i, onBuy: function(){ profile.ownedShoe.push(i); }, onPick: function(){ profile.shoe = i; } }); });
+  } else if (shopTab === 'skin'){
+    SKINS.forEach(function(c, i){ swatch(box, { color: c, label: SKIN_NAMES[i], price: 0, owned: true, on: (profile.skin || 0) === i, onPick: function(){ profile.skin = i; } }); });
+  } else {
+    box.className = 'shop';
+    if (profile.maxHearts < 5) box.appendChild(shopRow('Extra heart', 'Start every level with ' + (profile.maxHearts + 1) + ' hearts', 50 + (profile.maxHearts - 3) * 40, false, false, function(){ profile.maxHearts++; saveProfile(); }, null, '#ff5c8a'));
+    else box.appendChild(shopRow('Extra heart', 'You have the most hearts already', 0, true, false, null, null, '#ff5c8a'));
+    box.appendChild(shopRow('Hearts now', 'You start each level with ' + profile.maxHearts + ' hearts', 0, true, false, null, null, '#ff8fc8'));
+  }
+  drawShopPreview();
+}
+$('shopTabs').addEventListener('click', function(e){ var t = e.target.getAttribute('data-tab'); if (t){ shopTab = t; sfx.coin(); renderShop(); } });
 $('shopBtn').addEventListener('click', function(){ audioOn(); openShop(); });
 $('shopClose').addEventListener('click', closeShop);
 
@@ -2585,6 +2647,7 @@ var last = performance.now();
 function frame(now){
   var dt = Math.min(0.05, (now - last) / 1000); last = now;
   update(dt); draw();
+  if (S.state === 'shop' && !$('shop').hidden) drawShopPreview();
   requestAnimationFrame(frame);
 }
 function showTitle(){
