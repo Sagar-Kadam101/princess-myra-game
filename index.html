@@ -684,6 +684,7 @@ function genLevel(lv){
   coinArc(x + 110, GY - 140, 6, 40);
   Lv.goalX = x + fLen; Lv.length = x + fLen + 320;
   Lv.castleGate = { x: Lv.goalX + 10, y: 0, w: 16, h: GY, kind: 'gate', open: false, asked: true, castle: true }; Lv.solids.push(Lv.castleGate);
+  var petInfo = PETS[(lv - 1) % PETS.length]; Lv.pet = { x: Lv.goalX + 130, y: GY, emoji: petInfo[1], name: petInfo[0], state: 'hidden', t: 0 };
 
   for (i = 0; i < Lv.length / 22; i++){ var tx2 = i * 22 + rnd(0, 18); if (surfaceAt(Lv, tx2) === GY) Lv.tufts.push({ x: tx2, y: GY }); }
   for (i = 0; i < Lv.length / 140; i++){ var dx2 = i * 140 + rnd(10, 120); if (surfaceAt(Lv, dx2) === GY) Lv.decor.push({ x: dx2, y: GY, k: i % 3 === 0 ? 'mushroom' : 'flower', c: ['#ff8fc8', '#ffd166', '#9be7ff', '#c3f584'][i % 4], s: rnd(0.8, 1.2) }); }
@@ -771,7 +772,7 @@ function groundAhead(e, dir){
 /* ---------- combat ---------- */
 function hitMonster(m, dmg, kbx, kby, stun){
   if (m.type === 'wise') return;
-  m.hp -= dmg; m.hitT = 0.2;
+  m.hp -= dmg; m.hitT = 0.2; if (m.type === 'king'){ m.atk = null; m.atkT = 1.0; }
   m.vx = kbx; m.vy = kby; m.stun = Math.max(m.stun, stun);
   burst(m.x + m.w / 2, m.y + m.h / 2, 7, '#ffffff', 'star');
   if (dmg >= 2) sfx.bigHit(); else sfx.hit();
@@ -783,7 +784,8 @@ function poof(m){
   burst(cx, cy, 16, m.color, 'dot'); burst(cx, cy, 6, '#fff7c2', 'star');
   floatText(cx, m.y - 20, m.type === 'king' ? 'The King ran away!' : 'Bye bye!', '#ffe9f5');
   sfx.poof();
-  if (m.type === 'king'){ banner('The castle door is open!'); S.shake = 0.6; if (L.castleGate){ L.castleGate.open = true; sfx.gate(); } }
+  if (m.type === 'king'){ banner('The castle door is open!'); S.shake = 0.6; if (L.castleGate){ L.castleGate.open = true; sfx.gate(); }
+    if (L.pet){ L.pet.state = 'waiting'; L.pet.t = 0; say('The door is open! Someone is waiting for you, ' + playerName() + '!'); for (var c2 = 0; c2 < 10; c2++){ var ck = pickup('candy', L.goalX + 130, GY - 40, true); ck.vx = rnd(-260, -60); ck.vy = rnd(-420, -200); pickups.push(ck); } } }
   var n = m.type === 'king' ? 8 : m.type === 'grumpy' ? rndi(2, 3) : rndi(1, 2);
   for (var i = 0; i < n; i++){ var k = pickup(Math.random() < 0.6 ? 'coin' : 'candy', cx, cy, true); k.vx = rnd(-160, 160); k.vy = rnd(-420, -220); pickups.push(k); }
 }
@@ -862,6 +864,7 @@ function revive(){
 function startWin(){
   S.state = 'win'; winT = 0; nextBolt = 2.2; P.dance = true; P.power = null; P.vx = 0;
   balls = [];
+  if (L.pet){ L.pet.state = 'saved'; L.pet.t = 0; banner('You rescued a ' + L.pet.name + '!'); for (var h = 0; h < 14; h++) parts.push({ x: P.x + P.w / 2 + rnd(-30, 30), y: P.y + rnd(-10, 40), vx: rnd(-40, 40), vy: rnd(-120, -40), life: 1.6, max: 1.6, color: '#ff5c8a', size: rnd(4, 7), kind: 'heart' }); }
   sfx.win();
   saveTotal();
 }
@@ -982,7 +985,7 @@ function updatePlay(dt){
 
   if ((P.power === 'ball' || P.power === 'wand') && P.ballCd <= 0){
     var best = null, bd = 460;
-    for (i = 0; i < monsters.length; i++){ if (monsters[i].dizzy > 0 || monsters[i].type === 'wise' || monsters[i].type === 'king') continue; var d = Math.abs(monsters[i].x + monsters[i].w / 2 - pcx); if (d < bd && Math.abs(monsters[i].y - P.y) < 220){ bd = d; best = monsters[i]; } }
+    for (i = 0; i < monsters.length; i++){ if (monsters[i].dizzy > 0 || monsters[i].type === 'wise') continue; var d = Math.abs(monsters[i].x + monsters[i].w / 2 - pcx); if (d < bd && Math.abs(monsters[i].y - P.y) < 220){ bd = d; best = monsters[i]; } }
     if (best){
       var bdir = best.x + best.w / 2 >= pcx ? 1 : -1, dy = (best.y + best.h / 2) - (P.y + 20);
       balls.push({ x: pcx + bdir * 14, y: P.y + 20, w: 14, h: 14, vx: bdir * 520, vy: P.power === 'wand' ? clamp(dy * 2, -300, 200) : clamp(dy * 1.6, -350, 150) - 60, life: 1.5, spin: 0, spark: P.power === 'wand' });
@@ -994,7 +997,7 @@ function updatePlay(dt){
     var gone = bl.life <= 0 || bl.y > H + 50;
     var ns = nearSolids(bl); for (var q = 0; q < ns.length && !gone; q++) if (overlap(bl, ns[q])) gone = true;
     for (var j = 0; j < monsters.length && !gone; j++){
-      var mm = monsters[j]; if (mm.dizzy > 0 || mm.type === 'wise' || mm.type === 'king') continue;
+      var mm = monsters[j]; if (mm.dizzy > 0 || mm.type === 'wise') continue;
       if (overlap(bl, mm)){ hitMonster(mm, 1, (bl.vx > 0 ? 1 : -1) * 240, -200, 0.5); burst(bl.x, bl.y, 6, '#ff5c5c', 'dot'); gone = true; }
     }
     if (gone) balls.splice(i, 1);
@@ -1012,6 +1015,7 @@ function updatePlay(dt){
     if (L.sections[sectionIdx].name){ banner(L.sections[sectionIdx].name); if (L.sections[sectionIdx].name.indexOf('King') >= 0) sfx.boss(); }
     sectionIdx++;
   }
+  if (L.pet && L.pet.state === 'waiting') L.pet.t += dt;
   if (pcx > L.goalX + 40 && (!L.castleGate || L.castleGate.open)) startWin();
 }
 
@@ -1055,7 +1059,14 @@ function updateMonsters(dt, idle){
     if (m.stun <= 0){
       var sp = m.speed;
       if (!idle && m.type === 'king'){
-        if (Math.abs(mcx - pcx) < 560){ m.dir = pcx > mcx ? 1 : -1; sp = 95 + S.level * 8; m.hopT -= dt; if (m.hopT <= 0 && m.onGround){ m.vy = -520; m.hopT = rnd(2.2, 3.4); sfx.boss(); } }
+        m.atkT = (m.atkT || 0) - dt;
+        if (m.atk === 'wind'){ sp = 0; if (m.atkT <= 0){ m.atk = 'swipe'; m.atkT = 0.35; sfx.bigSwing(); } }
+        else if (m.atk === 'swipe'){ sp = 0; if (m.atkT <= 0){ m.atk = null; m.atkT = 1.2; } }
+        else if (Math.abs(mcx - pcx) < 560){
+          m.dir = pcx > mcx ? 1 : -1; sp = 95 + S.level * 8;
+          if (Math.abs(mcx - pcx) < 120 && m.onGround && m.atkT <= 0 && P.inv <= 0){ m.atk = 'wind'; m.atkT = Math.max(0.45, 0.8 - S.level * 0.05); sfx.boss(); }
+          m.hopT -= dt; if (m.hopT <= 0 && m.onGround && !m.atk){ m.vy = -520; m.hopT = rnd(2.2, 3.4); }
+        }
         if (m.onGround && !groundAhead(m, m.dir)) sp = 0;
       } else if (!idle && m.charges && Math.abs(mcx - pcx) < 300 && Math.abs((m.y + m.h) - (P.y + P.h)) < 90 && P.power !== 'bag' && P.power !== 'star'){
         m.dir = pcx > mcx ? 1 : -1; sp *= 1.4;
@@ -1068,11 +1079,15 @@ function updateMonsters(dt, idle){
     if (m.hitWall) m.dir = -m.hitWall;
     m.leg += Math.abs(m.vx) * dt * 0.14;
     if (m.y > H + 100){ monsters.splice(i, 1); continue; }
+    if (!idle && m.type === 'king' && m.atk === 'swipe' && !overlap(P, m) && (pcx - mcx) * m.dir > 0 && Math.abs(pcx - mcx) < m.w / 2 + 60 && Math.abs((P.y + P.h) - (m.y + m.h)) < 70){ hurtPrincess(mcx); if (S.state !== 'play') return; }
     if (!idle && overlap(P, m)){
       var stomp = P.vy > 0 && P.y + P.h < m.y + m.h * 0.6;
       if (stomp){
         hitMonster(m, m.type === 'king' ? 1 : 2, (mcx >= pcx ? 1 : -1) * 120, 0, 0.6); P.vy = -380; P.jumping = false; P.y = m.y - P.h - 1;
         floatText(mcx, m.y - 20, 'Boing!', '#fff3b0');
+      } else if (m.type === 'king'){
+        if (m.atk === 'swipe'){ hurtPrincess(mcx); if (S.state !== 'play') return; }
+        else { P.vx = (pcx < mcx ? -1 : 1) * 260; P.vy = Math.min(P.vy, -120); P.x += (pcx < mcx ? -1 : 1) * 6; }
       } else if (m.hurts){ hurtPrincess(mcx); if (S.state !== 'play') return; }
     }
   }
@@ -1100,6 +1115,7 @@ function updateWin(dt){
   S.storm = Math.min(1, S.storm + dt * 0.6);
   if (nextBolt <= 0){ spawnBolt(); if (Math.random() < 0.35) spawnBolt(); nextBolt = rnd(0.45, 1.2); }
   P.facing = Math.sin(winT * 5) > 0 ? 1 : -1; P.vx = 0;
+  if (L.pet) L.pet.t += dt;
   physics(P, dt, GRAV);
   updatePickups(dt);
   if (winT > 2.4 && !winShown){
@@ -1246,6 +1262,15 @@ function drawWorld(){
     ctx.restore();
   }
   drawGoalCastle();
+  if (L.pet && L.pet.state !== 'hidden'){
+    var pt2 = L.pet, px2, py2;
+    if (pt2.state === 'waiting'){ px2 = pt2.x; py2 = GY - 6 - Math.abs(Math.sin(pt2.t * 5)) * 18; }
+    else { var k2 = Math.min(1, pt2.t / 0.8); px2 = pt2.x + (P.x + P.w / 2 + 36 * P.facing * -1 - pt2.x) * k2; py2 = GY - 6 - Math.abs(Math.sin(pt2.t * 6)) * 14; }
+    ctx.save(); ctx.font = '40px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ellipse(px2, GY + 2, 18, 6);
+    ctx.fillText(pt2.emoji, px2, py2); ctx.restore();
+    if (pt2.state === 'waiting'){ ctx.fillStyle = '#ff5c8a'; heart(px2 + 26, py2 - 44 + Math.sin(pt2.t * 4) * 4, 6); ctx.font = '700 16px ' + FONT; ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(40,20,80,0.9)'; ctx.lineWidth = 4; ctx.strokeText('Help!', px2, py2 - 56); ctx.fillText('Help!', px2, py2 - 56); }
+  }
 }
 function drawGround(s){
   var th = theme(), x0 = Math.max(s.x, camX - 10), x1 = Math.min(s.x + s.w, camX + W + 10);
@@ -1640,6 +1665,8 @@ function drawMonster(m){
     ctx.beginPath(); ctx.moveTo(-rx * 0.9, cy + ry * 0.1); ctx.lineTo(-rx * 1.25, cy + ry * 0.45 - armSwing); ctx.stroke();
   }
   if (ty === 'ghost'){ ctx.fillStyle = m.color; ellipse(-rx - 4, cy + 4 + Math.sin(t * 4) * 3, 7, 4); ellipse(rx + 4, cy + 4 + Math.cos(t * 4) * 3, 7, 4); }
+  if (ty === 'king' && m.atk){ var ad = m.dir || 1; ctx.strokeStyle = dark; ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(rx * 0.7 * ad, cy); if (m.atk === 'wind'){ ctx.lineTo(rx * 1.1 * ad, cy - ry - 10); ctx.stroke(); ctx.font = '700 22px ' + FONT; ctx.textAlign = 'center'; ctx.fillStyle = '#fff3b0'; ctx.strokeStyle = 'rgba(40,20,80,0.9)'; ctx.lineWidth = 4; ctx.strokeText('!', rx * 1.2 * ad, cy - ry - 22); ctx.fillText('!', rx * 1.2 * ad, cy - ry - 22); }
+    else { ctx.lineTo(rx * 1.9 * ad, cy + ry * 0.3); ctx.stroke(); ctx.save(); ctx.globalAlpha = 0.6; ctx.strokeStyle = '#fff3b0'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(rx * 0.7 * ad, cy, rx * 1.3, ad > 0 ? -1.4 : Math.PI - 0.3, ad > 0 ? 0.3 : Math.PI + 1.4); ctx.stroke(); ctx.restore(); } }
   if (ty === 'king'){ ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.moveTo(-14, cy - ry + 2); ctx.lineTo(-14, cy - ry - 14); ctx.lineTo(-7, cy - ry - 6); ctx.lineTo(0, cy - ry - 18); ctx.lineTo(7, cy - ry - 6); ctx.lineTo(14, cy - ry - 14); ctx.lineTo(14, cy - ry + 2); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#ff4f6d'; circle(0, cy - ry - 6, 3); }
   if (ty === 'wise'){ ctx.fillStyle = '#2a1a3a'; ctx.fillRect(-16, cy - ry - 4, 32, 6); ctx.beginPath(); ctx.moveTo(-20, cy - ry - 4); ctx.lineTo(0, cy - ry - 16); ctx.lineTo(20, cy - ry - 4); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#ffd23f'; ctx.fillRect(18, cy - ry - 10, 2, 10); }
   // face
