@@ -96,6 +96,22 @@
   .prow.cur span:first-child { color:#ffd23f; font-weight:700; }
   .prow button, .plist > button { pointer-events:auto; font-family:inherit; font-size:14px; font-weight:700; color:#fff; background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.35); border-radius:10px; height:32px; padding:0 10px; cursor:pointer; margin:2px; }
   .prow button.warn { border-color:#ff8fc8; }
+  .cal { background:rgba(0,0,0,0.25); border-radius:14px; padding:8px 10px; margin:4px 0 8px; }
+  .calhead { display:flex; align-items:center; justify-content:space-between; font-weight:700; color:#ffd23f; margin-bottom:6px; }
+  .calhead button { pointer-events:auto; font-family:inherit; font-size:18px; color:#fff; background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.35); border-radius:10px; width:34px; height:30px; cursor:pointer; }
+  .calgrid { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
+  .calw { font-size:11px; color:rgba(255,255,255,0.6); text-align:center; }
+  .calcell { min-height:34px; border-radius:8px; background:rgba(255,255,255,0.08); font-size:12px; text-align:center; padding:2px 0; cursor:pointer; pointer-events:auto; line-height:1.15; }
+  .calcell.empty { background:transparent; cursor:default; pointer-events:none; }
+  .calcell b { display:block; font-weight:700; }
+  .calcell span { display:block; font-size:10px; color:#fff3b0; }
+  .calcell.has { background:rgba(255,210,63,0.28); }
+  .calcell.today { outline:2px solid rgba(255,255,255,0.6); }
+  .calcell.sel { background:#ffd23f; color:#5a1d3f; } .calcell.sel span { color:#5a1d3f; }
+  .calcell.clock { box-shadow:inset 0 -3px 0 #ff5c8a; }
+  .calday { text-align:left; font-size:clamp(12px,2.1vw,15px); margin-top:6px; line-height:1.5; }
+  .caldayhead { color:#ffd23f; font-weight:700; }
+  .calclock { color:#ff8fc8; }
   .guide { text-align:left; font-size:clamp(12px,2.1vw,15px); line-height:1.4; background:rgba(0,0,0,0.25); border-radius:14px; padding:10px 14px; margin:6px 0; }
   .guide b { color:#ffd23f; }
   .players button { height:36px; font-size:15px; padding:0 14px; }
@@ -295,7 +311,7 @@
       <div><button class="link-btn" id="apForgot">Forgot the PIN?</button></div>
     </div>
     <div id="apPhone" hidden>
-      <p class="small">Ask your grown-up for the 6-digit code from Parent Key on their phone, and type it here:</p>
+      <p class="small">Ask your grown-up for the 4-digit code from Parent Key on their phone, and type it here:</p>
       <div class="pin-dots" id="apPhoneDots"></div>
       <div class="pad" id="apPhonePad"></div>
       <div><button class="link-btn" id="apPairHelpBtn">How does this work?</button></div>
@@ -303,9 +319,9 @@
           <b>1. On this device (the child's):</b> a grown-up opens Settings, Grown-ups, turns on "Parent's phone" and notes the 8-digit pairing code.<br>
           <b>2. On your own phone:</b> install MyRush from the same link, open it, tap Settings, then Grown-ups, then "Parent Key: I am on the grown-up's phone". Type the pairing code once. It stays saved.<br>
           <b>3. Every day:</b> when the child's free time is over, the child taps "Grown-up: give more time" and "Code from phone".<br>
-          <b>4. On your phone:</b> open Parent Key and tap the minutes you allow. A 6-digit code appears. Read it to the child, from any room.<br>
+          <b>4. On your phone:</b> open Parent Key and tap the minutes you allow. A 4-digit code appears. Read it to the child, from any room.<br>
           <b>5. The child types the code</b> on this device and plays for that many minutes.<br>
-          Works without internet. Each code works once and changes every 10 minutes, so an old code cannot be reused. Both phones need the right time set. "New pairing code" here breaks the old pairing, so type the new one into your phone again.
+          Works without internet. Each code works once and changes every 15 minutes, so an old code cannot be reused. Both phones need the right time set. "New pairing code" here breaks the old pairing, so type the new one into your phone again.
         </div></div>
     </div>
     <div id="apTime" hidden>
@@ -358,14 +374,16 @@
           <b>1. On this device (the child's):</b> you are here. Tap "Parent's phone" above and note the 8-digit pairing code.<br>
           <b>2. On your own phone:</b> install MyRush from the same link, open it, tap Settings, then Grown-ups, then "Parent Key: I am on the grown-up's phone". Type the pairing code once. It stays saved.<br>
           <b>3. Every day:</b> when the child's free time is over, the child taps "Grown-up: give more time" and "Code from phone".<br>
-          <b>4. On your phone:</b> open Parent Key and tap the minutes you allow. A 6-digit code appears. Read it to the child, from any room.<br>
+          <b>4. On your phone:</b> open Parent Key and tap the minutes you allow. A 4-digit code appears. Read it to the child, from any room.<br>
           <b>5. The child types the code</b> on this device and plays for that many minutes.<br>
-          Works without internet. Each code works once and changes every 10 minutes, so an old code cannot be reused. Both phones need the right time set. "New pairing code" here breaks the old pairing, so type the new one into your phone again.
+          Works without internet. Each code works once and changes every 15 minutes, so an old code cannot be reused. Both phones need the right time set. "New pairing code" here breaks the old pairing, so type the new one into your phone again.
         </div></div>
       </div>
       <p class="small">Give extra time now:</p>
       <div class="row" id="grantRow"><button data-min="10">10 min</button><button data-min="20">20 min</button><button data-min="30">30 min</button><button data-min="45">45 min</button><button data-min="60">60 min</button></div>
       <div class="row"><button id="lockNowBtn" class="warn">Lock now</button></div>
+      <p class="small">Play calendar. Tap a day to see every start and end time:</p>
+      <div class="cal"><div class="calhead"><button id="calPrev">&#8249;</button><span id="calTitle"></span><button id="calNext">&#8250;</button></div><div id="calGrid" class="calgrid"></div><div id="calDay" class="calday"></div></div>
       <p class="small">Professor questions:</p>
       <div class="row" id="qRow"><button data-q="auto">By age</button><button data-q="easier">Easier</button><button data-q="harder">Harder</button><button data-q="off">None</button></div>
       <p class="small" id="qNote"></p>
@@ -496,7 +514,7 @@ profiles.forEach(migrateProfile);
 if (curIdx >= profiles.length) curIdx = 0;
 profile = profiles.length ? profiles[curIdx] : null;
 function pid(){ return profile ? profile.id : 'none'; }
-function defaultStats(){ return { played: 0, day: '', today: 0, best: 1, wins: 0, asked: 0, right: 0, types: {}, streak: 0, kicks: 0, retry: [] }; }
+function defaultStats(){ return { played: 0, day: '', today: 0, best: 1, wins: 0, asked: 0, right: 0, types: {}, streak: 0, kicks: 0, retry: [], sessions: [], clockEvents: [] }; }
 var total = load('ppc-total-' + pid(), { coins: 0, candies: 0 });
 var stats = load('ppc-stats-' + pid(), defaultStats());
 if (!stats.types) stats.types = {};
@@ -509,12 +527,16 @@ if (lock.daily == null) lock.daily = 20;
 function saveLock(){ save('ppc-time', lock); }
 var GRANTS = [10, 15, 20, 30, 45, 60];
 function strHash(str){ var h1 = 0xdeadbeef ^ 7, h2 = 0x41c6ce57 ^ 7; for (var i = 0; i < str.length; i++){ var ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); } h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909); return 4294967296 * (2097151 & h2) + (h1 >>> 0); }
-function timeSlot(){ return Math.floor(Date.now() / 600000); }
-function codeFor(secret, req, min){ return ('000000' + (strHash(String(secret) + ':' + String(req) + ':' + String(min)) % 1000000)).slice(-6); }
+var SLOT_MS = 15 * 60000;
+function timeSlot(){ return Math.floor(Date.now() / SLOT_MS); }
+function playDayKey(ms){ var d = new Date((ms || Date.now()) + (5.5 - 6) * 3600000); return d.getUTCFullYear() + '-' + (d.getUTCMonth() + 1) + '-' + d.getUTCDate(); }
+function pad2(n){ return (n < 10 ? '0' : '') + n; }
+function hm(ms){ var d = new Date(ms); var h = d.getHours(), ap = h >= 12 ? 'pm' : 'am'; h = h % 12; if (h === 0) h = 12; return h + ':' + pad2(d.getMinutes()) + ' ' + ap; }
+function codeFor(secret, req, min){ return ('0000' + (strHash(String(secret) + ':' + String(req) + ':' + String(min)) % 10000)).slice(-4); }
 function digits(n){ var s = ''; for (var i = 0; i < n; i++) s += String(Math.floor(Math.random() * 10)); if (s.charAt(0) === '0') s = '7' + s.slice(1); return s; }
 function saveSettings(){ save('ppc-settings', settings); }
 function saveProfile(){ if (!profile) return; migrateProfile(profile); if (profiles.indexOf(profile) < 0){ if (curIdx < profiles.length) profiles[curIdx] = profile; else { profiles.push(profile); curIdx = profiles.length - 1; } } save('ppc-profiles', profiles); save('ppc-current', curIdx); }
-function fixStats(){ if (!stats.types) stats.types = {}; if (stats.streak == null) stats.streak = 0; if (stats.kicks == null) stats.kicks = 0; if (!stats.retry) stats.retry = []; }
+function fixStats(){ if (!stats.types) stats.types = {}; if (stats.streak == null) stats.streak = 0; if (stats.kicks == null) stats.kicks = 0; if (!stats.retry) stats.retry = []; if (!stats.sessions) stats.sessions = []; if (!stats.clockEvents) stats.clockEvents = []; }
 function switchProfile(i){ if (i < 0 || i >= profiles.length) return; curIdx = i; profile = profiles[i]; migrateProfile(profile); save('ppc-current', i); total = load('ppc-total-' + pid(), { coins: 0, candies: 0 }); stats = load('ppc-stats-' + pid(), defaultStats()); fixStats(); }
 function removeProfile(i){ if (profiles.length < 2 || i < 0 || i >= profiles.length) return; var gone = profiles[i]; profiles.splice(i, 1); try { localStorage.removeItem('ppc-total-' + gone.id); localStorage.removeItem('ppc-stats-' + gone.id); } catch (e) {} save('ppc-profiles', profiles); switchProfile(Math.min(i, profiles.length - 1)); }
 
@@ -1256,6 +1278,7 @@ function spawnBolt(){
 /* ---------- update ---------- */
 function update(dt){
   S.time += dt;
+  if (S.state === 'play' || S.state === 'quiz' || S.state === 'win' || S.state === 'revive' || S.state === 'lose' || S.state === 'paused') sessionTick(dt); else closeSession();
   S.shake = Math.max(0, S.shake - dt);
   flash *= Math.exp(-dt * 5);
   for (var i = bolts.length - 1; i >= 0; i--){ bolts[i].life -= dt; if (bolts[i].life <= 0) bolts.splice(i, 1); }
@@ -2496,14 +2519,24 @@ function drawQuizMonster(){
 }
 /* ---------- play time ---------- */
 var playSaveT = 0, minuteWarned = false, lockedFrom = 'title';
-function todayStr(){ var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+function todayStr(){ return playDayKey(); }
 function clockGuard(){
   var now = Date.now();
   if (lock.lastSeen && now < lock.lastSeen - 10 * 60000){
     lock.played = Math.max(lock.played || 0, lock.daily > 0 ? lock.daily * 60 : 0); lock.until = Math.min(lock.until || 0, now); lock.clockNote = true; lock.day = todayStr();
+    if (!stats.clockEvents) stats.clockEvents = []; stats.clockEvents.push({ at: now, was: lock.lastSeen, usedToday: Math.round((stats.today || 0) / 60) }); if (stats.clockEvents.length > 50) stats.clockEvents.shift(); closeSession(); saveStats();
   }
   lock.lastSeen = now;
 }
+var sessSaveT = 0;
+function sessionTick(dt){
+  if (!stats.sessions) stats.sessions = [];
+  var now = Date.now(), cur = stats.sessions.length ? stats.sessions[stats.sessions.length - 1] : null;
+  if (cur && cur.open && now - cur.e > 180000){ cur.open = false; cur = null; }
+  if (!cur || !cur.open){ cur = { s: now, e: now, open: true }; stats.sessions.push(cur); if (stats.sessions.length > 600) stats.sessions.shift(); saveStats(); }
+  cur.e = now; sessSaveT += dt; if (sessSaveT > 10){ sessSaveT = 0; saveStats(); }
+}
+function closeSession(){ if (!stats.sessions || !stats.sessions.length) return; var cur = stats.sessions[stats.sessions.length - 1]; if (cur.open){ cur.open = false; saveStats(); } }
 function failsBlockedMs(){ return Math.max(0, (lock.failUntil || 0) - Date.now()); }
 function noteFail(){ lock.fails = (lock.fails || 0) + 1; if (lock.fails >= 3){ var waitS = Math.min(300, 30 * Math.pow(2, lock.fails - 3)); lock.failUntil = Date.now() + waitS * 1000; } saveLock(); }
 function clearFails(){ lock.fails = 0; lock.failUntil = 0; saveLock(); }
@@ -2555,6 +2588,7 @@ function refreshTitle(){
 }
 function lockGame(){
   if (S.state === 'locked') return;
+  closeSession();
   lockedFrom = S.state; S.state = 'locked'; clearKeys(); touch = {}; pointers = {}; saveLock();
   $('lockedTitle').textContent = lockedFrom === 'play' ? "Time's up!" : 'Play time';
   $('lockedMsg').textContent = lockedFrom === 'play' ? 'Great playing! Ask a grown-up if you may play more.' : 'The free time for today is used up. Ask a grown-up for more time.';
@@ -2587,7 +2621,7 @@ function apMethod(m){
   else if (m === 'pin'){ show('apPin'); renderAp(); }
   else { show('apPhone'); renderAp(); }
 }
-function apLen(){ return ap.method === 'sum' ? ap.sum.ans.length : ap.method === 'pin' ? 4 : 6; }
+function apLen(){ return ap.method === 'sum' ? ap.sum.ans.length : 4; }
 function renderAp(msg){
   var n = apLen(), dots = '';
   for (var i = 0; i < n; i++) dots += i < ap.buf.length ? (ap.method === 'pin' ? '●' : ap.buf[i]) : '○';
@@ -2679,9 +2713,9 @@ function showSettingsArea(){
   $('report').innerHTML = html;
   // play time
   var dr = $('dailyRow').children; for (i = 0; i < dr.length; i++) dr[i].classList.toggle('on', parseInt(dr[i].getAttribute('data-daily'), 10) === lock.daily);
-  var info = lock.daily < 0 ? 'No time limit. The child can play any time.' : lock.daily === 0 ? 'No free time: a grown-up must approve every play session.' : 'Free time left today: ' + minutesText(dailyLeftMs()) + '.';
+  var info = lock.daily < 0 ? 'No time limit. The child can play any time.' : lock.daily === 0 ? 'No free time: a grown-up must approve every play session.' : 'Free time left today: ' + minutesText(dailyLeftMs()) + '. The day starts at 6 in the morning.';
   if (grantLeftMs() > 0) info += ' Extra time given now: ' + minutesText(grantLeftMs()) + '.';
-  if (lock.clockNote){ info += ' The clock on this device was moved backwards, so free time was paused until a grown-up approved play.'; lock.clockNote = false; saveLock(); }
+  if (lock.clockNote){ info += ' The clock on this device was moved backwards, so free time was paused until a grown-up approved play. See the calendar below.'; lock.clockNote = false; saveLock(); }
   $('timeInfo').textContent = info;
   var mr = $('methodRow').children; for (i = 0; i < mr.length; i++){ var key = mr[i].getAttribute('data-m'); mr[i].classList.toggle('on', !!lock.methods[key]); }
   $('methodNote').textContent = 'Sum check: a two-digit times sum, fine for young children. PIN: a 4-digit code you enter on this device. Parent\u2019s phone: the child reads a request code to you and you reply with a 6-digit approval code from your own phone, even from another room.';
@@ -2695,11 +2729,44 @@ function showSettingsArea(){
   var dr2 = $('diffRow').children; for (i = 0; i < dr2.length; i++) dr2[i].classList.toggle('on', dr2[i].getAttribute('data-diff') === settings.diff);
   $('qNote').textContent = settings.qmode === 'off' ? 'The professor stays home. No questions in the levels.' : settings.qmode === 'easier' ? 'Questions from one age group younger.' : settings.qmode === 'harder' ? 'Questions from one age group older.' : 'Questions are picked from the birthday: ' + ['3 to 4', '5 to 6', '7 to 8', '9 and up'][tierForAge(playerAge())] + ' years.';
   $('diffNote').textContent = settings.diff === 'gentle' ? 'Only the Grumpy King and the red grumpies can hurt. Monsters are slower and the King is weaker.' : settings.diff === 'brave' ? 'Faster monsters and a tougher Grumpy King.' : 'Spiky monsters, cyclopses and diving birds also hurt from level 2.';
+  renderCalendar();
   $('resetNote').hidden = !resetArmed;
   removeArmedIdx = -1; renderPlayers();
   $('parentWho').textContent = profile ? 'Report for ' + (profile.name || 'the child') + (profiles.length > 1 ? '. Switch players on the start screen to see another child.' : '') : '';
   $('resetProgress').textContent = resetArmed ? 'Yes, reset everything' : 'Reset progress';
 }
+var calYM = null, calSel = null;
+function dayKeyOf(ms){ return playDayKey(ms); }
+function renderCalendar(){
+  var now = new Date(); if (!calYM) calYM = { y: now.getFullYear(), m: now.getMonth() };
+  var byDay = {}, sess = stats.sessions || [];
+  sess.forEach(function(s){ var k = dayKeyOf(s.s); (byDay[k] = byDay[k] || []).push(s); });
+  var evByDay = {}; (stats.clockEvents || []).forEach(function(e){ var k = dayKeyOf(e.at); (evByDay[k] = evByDay[k] || []).push(e); });
+  var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  $('calTitle').textContent = months[calYM.m] + ' ' + calYM.y;
+  var grid = $('calGrid'); grid.innerHTML = '';
+  ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].forEach(function(w){ var h = document.createElement('div'); h.className = 'calw'; h.textContent = w; grid.appendChild(h); });
+  var first = new Date(calYM.y, calYM.m, 1), offset = (first.getDay() + 6) % 7, days = new Date(calYM.y, calYM.m + 1, 0).getDate();
+  for (var b = 0; b < offset; b++){ var e0 = document.createElement('div'); e0.className = 'calcell empty'; grid.appendChild(e0); }
+  var todayKey = playDayKey();
+  for (var d = 1; d <= days; d++){
+    var key = calYM.y + '-' + (calYM.m + 1) + '-' + d, list = byDay[key] || [], mins = 0;
+    list.forEach(function(s){ mins += (s.e - s.s) / 60000; }); mins = Math.round(mins);
+    var c = document.createElement('div'); c.className = 'calcell' + (list.length ? ' has' : '') + (key === todayKey ? ' today' : '') + (calSel === key ? ' sel' : '') + (evByDay[key] ? ' clock' : '');
+    c.innerHTML = '<b>' + d + '</b>' + (list.length ? '<span>' + mins + 'm</span>' : '');
+    (function(k){ c.addEventListener('click', function(){ calSel = k; renderCalendar(); }); })(key);
+    grid.appendChild(c);
+  }
+  var box = $('calDay'); box.innerHTML = '';
+  if (calSel){
+    var list2 = byDay[calSel] || [], ev2 = evByDay[calSel] || [];
+    var parts2 = calSel.split('-'); var head = document.createElement('div'); head.className = 'caldayhead'; head.textContent = parts2[2] + ' ' + months[parseInt(parts2[1], 10) - 1] + ': ' + (list2.length ? list2.length + ' time' + (list2.length === 1 ? '' : 's') : 'not played'); box.appendChild(head);
+    list2.forEach(function(s){ var row = document.createElement('div'); var mins = Math.max(1, Math.round((s.e - s.s) / 60000)); row.textContent = hm(s.s) + ' to ' + hm(s.e) + '  (' + mins + ' min)' + (s.open ? ', playing now' : ''); box.appendChild(row); });
+    ev2.forEach(function(e){ var row = document.createElement('div'); row.className = 'calclock'; row.textContent = 'Clock moved back at ' + hm(e.at) + ' (it showed ' + hm(e.was) + ' before). ' + e.usedToday + ' min had been used that day. Free time was paused.'; box.appendChild(row); });
+  }
+}
+$('calPrev').addEventListener('click', function(){ calYM.m--; if (calYM.m < 0){ calYM.m = 11; calYM.y--; } calSel = null; renderCalendar(); });
+$('calNext').addEventListener('click', function(){ calYM.m++; if (calYM.m > 11){ calYM.m = 0; calYM.y++; } calSel = null; renderCalendar(); });
 function startPinSetup(){ setMode = 'first'; setBuf = ''; setFirst = ''; $('pinSetup').hidden = false; renderSet(); }
 function renderSet(msg){
   var dots = ''; for (var i = 0; i < 4; i++) dots += i < setBuf.length ? '●' : '○';
@@ -2771,8 +2838,8 @@ function keyCompute(min, quiet){
   if (sec.length !== 8){ $('keyMsg').textContent = 'Type the 8-digit pairing code from the child’s device first.'; return; }
   if (sec !== pkey.secret){ pkey.secret = sec; save('ppc-parentkey', pkey); }
   keyMin = min;
-  var slot = timeSlot(), c = codeFor(sec, slot, min), left = Math.ceil(((slot + 1) * 600000 - Date.now()) / 60000);
-  $('keyOut').textContent = c.slice(0, 3) + ' ' + c.slice(3);
+  var slot = timeSlot(), c = codeFor(sec, slot, min), left = Math.ceil(((slot + 1) * SLOT_MS - Date.now()) / 60000);
+  $('keyOut').textContent = c.slice(0, 2) + ' ' + c.slice(2);
   $('keyMsg').textContent = 'Read this code to the child. It gives ' + min + ' minutes and works once. A new code appears in ' + left + ' minute' + (left === 1 ? '' : 's') + '.';
   var kb = $('keyGrant').children; for (var i = 0; i < kb.length; i++) kb[i].classList.toggle('on', parseInt(kb[i].getAttribute('data-min'), 10) === min);
 }
