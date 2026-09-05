@@ -76,7 +76,9 @@
   @keyframes pulse { from { transform:scale(1); } to { transform:scale(1.06); } }
   .speak-btn { pointer-events:auto; background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.4); border-radius:50%; width:48px; height:48px; font-size:24px; cursor:pointer; margin-left:8px; vertical-align:middle; }
   .report { display:grid; grid-template-columns:1fr auto 1fr auto; gap:2px 14px; text-align:left; font-size:clamp(12px,2.1vw,15px); background:rgba(0,0,0,0.25); border-radius:14px; padding:8px 14px; margin:6px 0; }
-  #parent .panel { max-height:94vh; overflow:auto; }
+  #parent .panel, #approve .panel { max-height:94vh; overflow:auto; }
+  #parent input { font-family:inherit; font-size:20px; padding:8px 12px; border-radius:12px; border:2px solid rgba(255,255,255,0.35); background:rgba(0,0,0,0.3); color:#fff; width:min(70vw,260px); text-align:center; letter-spacing:2px; }
+  #parent h3 { margin:6px 0; color:#ffd23f; }
   #parent .small { margin:4px 0; }
   .report b { color:#ffd23f; font-weight:700; }
   #winPet { font-size:clamp(17px,3vw,23px); }
@@ -101,6 +103,7 @@
     <p class="small" id="treasure"></p>
     <p class="small" id="petLine"></p>
     <p class="small" id="lockLine"></p>
+    <div id="resetNotice" class="notice" hidden></div>
     <button class="big-btn" id="playBtn">Start</button>
     <div><button class="link-btn" id="shopBtn">Treasure Shop</button><button class="link-btn" id="settingsBtn">Settings</button></div>
   </div>
@@ -192,6 +195,50 @@
   </div>
 </div>
 
+<div id="locked" class="overlay solid" hidden>
+  <div class="panel">
+    <h1 id="lockedTitle">Play time</h1>
+    <p id="lockedMsg">Ask a grown-up for more time.</p>
+    <div id="resetNotice2" class="notice" hidden></div>
+    <button class="big-btn" id="askBtn">Grown-up: give more time</button>
+    <div><button class="link-btn" id="lockedBack">Back to the start</button></div>
+  </div>
+</div>
+
+<div id="approve" class="overlay solid" hidden>
+  <div class="panel" style="min-width:min(88vw,440px)">
+    <h2>Grown-ups only</h2>
+    <div class="row" id="apMethods"></div>
+    <div id="apSum" hidden>
+      <p class="small" id="apSumHint"></p>
+      <div class="pin-dots" id="apSumDots"></div>
+      <div class="pad" id="apSumPad"></div>
+    </div>
+    <div id="apPin" hidden>
+      <p class="small" id="apPinHint">Enter the grown-ups PIN</p>
+      <div class="pin-dots" id="apPinDots"></div>
+      <div class="pad" id="apPinPad"></div>
+      <div><button class="link-btn" id="apForgot">Forgot the PIN?</button></div>
+    </div>
+    <div id="apPhone" hidden>
+      <p class="small">Read this request code to your grown-up. They type it into Parent Key on their phone.</p>
+      <div class="code" id="apReq"></div>
+      <p class="small">Then type the 6-digit approval code they give you:</p>
+      <div class="pin-dots" id="apPhoneDots"></div>
+      <div class="pad" id="apPhonePad"></div>
+    </div>
+    <div id="apTime" hidden>
+      <p class="small">How long may the child play now?</p>
+      <div class="row" id="apGrant"><button data-min="10">10 min</button><button data-min="15">15 min</button><button data-min="20">20 min</button><button data-min="30">30 min</button><button data-min="45">45 min</button><button data-min="60">60 min</button></div>
+    </div>
+    <div id="apForgotArea" hidden>
+      <p class="small">Without the PIN you can start a 24-hour reset. A notice shows on the start screen the whole time, so you can cancel it if a child started it. After 24 hours the PIN is removed.</p>
+      <div class="row"><button id="apDelayReset" class="warn">Reset PIN in 24 hours</button><button id="apForgotBack">Back</button></div>
+    </div>
+    <div><button class="link-btn" id="apClose">Close</button></div>
+  </div>
+</div>
+
 <div id="parent" class="overlay solid" hidden>
   <div class="panel" style="min-width:min(88vw,470px)">
     <h2>Grown-ups only</h2>
@@ -199,18 +246,51 @@
       <p class="small" id="pinHint"></p>
       <div class="pin-dots" id="pinDots"></div>
       <div class="pad" id="pinPad"></div>
+      <div><button class="link-btn" id="parentKeyBtn2">Parent Key: I am on the grown-up's phone</button></div>
     </div>
     <div id="parentSettings" hidden>
-      <p class="small">Screen time is managed by the parental controls on this device. This page shows how the play is going and lets you tune the game.</p>
       <div class="report" id="report"></div>
+      <p class="small">Free play each day, without asking:</p>
+      <div class="row" id="dailyRow"><button data-daily="0">None</button><button data-daily="10">10 min</button><button data-daily="15">15 min</button><button data-daily="20">20 min</button><button data-daily="30">30 min</button><button data-daily="45">45 min</button><button data-daily="-1">No limit</button></div>
+      <p class="small" id="timeInfo"></p>
+      <p class="small">After that, a grown-up approves more time with:</p>
+      <div class="row" id="methodRow"><button data-m="sum">Sum check</button><button data-m="pin">PIN</button><button data-m="phone">Parent's phone</button></div>
+      <p class="small" id="methodNote"></p>
+      <div class="row"><span class="small" id="pinState"></span><button id="changePinBtn" hidden>Change PIN</button></div>
+      <div id="pinSetup" hidden>
+        <p class="small" id="pinSetHint"></p>
+        <div class="pin-dots" id="pinSetDots"></div>
+        <div class="pad" id="pinSetPad"></div>
+        <div><button class="link-btn" id="pinSetCancel">Cancel</button></div>
+      </div>
+      <div id="phoneSetup" hidden>
+        <p class="small">On your own phone, open MyRush, go to Settings, Grown-ups, then "Parent Key", and type this pairing code once. Keep it away from the children.</p>
+        <div class="code" id="pairCode"></div>
+        <div class="row"><button id="newPair">New pairing code</button></div>
+      </div>
+      <p class="small">Give extra time now:</p>
+      <div class="row" id="grantRow"><button data-min="10">10 min</button><button data-min="20">20 min</button><button data-min="30">30 min</button><button data-min="45">45 min</button><button data-min="60">60 min</button></div>
+      <div class="row"><button id="lockNowBtn" class="warn">Lock now</button></div>
       <p class="small">Professor questions:</p>
       <div class="row" id="qRow"><button data-q="auto">By age</button><button data-q="easier">Easier</button><button data-q="harder">Harder</button><button data-q="off">None</button></div>
       <p class="small" id="qNote"></p>
       <p class="small">Monsters:</p>
       <div class="row" id="diffRow"><button data-diff="gentle">Gentle</button><button data-diff="normal">Normal</button><button data-diff="brave">Brave</button></div>
       <p class="small" id="diffNote"></p>
-      <div class="row"><button id="editChild">Change the child</button><button id="resetProgress" class="warn">Reset progress</button></div>
+      <div class="row"><button id="editChild">Change the child</button><button id="parentKeyBtn">Parent Key</button><button id="resetProgress" class="warn">Reset progress</button></div>
       <p class="small" id="resetNote" hidden>Tap once more to confirm. Coins, candies, rescued friends, shop items and this report will be cleared.</p>
+    </div>
+    <div id="parentKey" hidden>
+      <h3>Parent Key</h3>
+      <p class="small">Use this on the grown-up's own phone. Type the pairing code from the child's device once. It stays saved here.</p>
+      <p><input type="text" id="pairInput" inputmode="numeric" maxlength="9" placeholder="Pairing code (8 digits)" autocomplete="off"></p>
+      <p class="small">Request code shown on the child's screen:</p>
+      <p><input type="text" id="reqInput" inputmode="numeric" maxlength="5" placeholder="Request code (4 digits)" autocomplete="off"></p>
+      <p class="small">Allow the child to play for:</p>
+      <div class="row" id="keyGrant"><button data-min="10">10 min</button><button data-min="15">15 min</button><button data-min="20">20 min</button><button data-min="30">30 min</button><button data-min="45">45 min</button><button data-min="60">60 min</button></div>
+      <div class="code" id="keyOut">------</div>
+      <p class="small" id="keyMsg"></p>
+      <div><button class="link-btn" id="keyBack">Back</button></div>
     </div>
     <div><button class="link-btn" id="parentClose">Close</button></div>
   </div>
@@ -311,6 +391,14 @@ var stats = load('ppc-stats', { played: 0, day: '', today: 0, best: 1, wins: 0, 
 if (!stats.types) stats.types = {};
 function saveTotal(){ save('ppc-total', total); }
 function saveStats(){ save('ppc-stats', stats); }
+var lock = load('ppc-time', { daily: 20, day: '', played: 0, until: 0, pin: null, methods: { sum: true, pin: false, phone: false }, secret: null, resetAt: 0, req: null });
+if (!lock.methods) lock.methods = { sum: true, pin: false, phone: false };
+if (lock.daily == null) lock.daily = 20;
+function saveLock(){ save('ppc-time', lock); }
+var GRANTS = [10, 15, 20, 30, 45, 60];
+function strHash(str){ var h1 = 0xdeadbeef ^ 7, h2 = 0x41c6ce57 ^ 7; for (var i = 0; i < str.length; i++){ var ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); } h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909); return 4294967296 * (2097151 & h2) + (h1 >>> 0); }
+function codeFor(secret, req, min){ return ('000000' + (strHash(String(secret) + ':' + String(req) + ':' + String(min)) % 1000000)).slice(-6); }
+function digits(n){ var s = ''; for (var i = 0; i < n; i++) s += String(Math.floor(Math.random() * 10)); if (s.charAt(0) === '0') s = '7' + s.slice(1); return s; }
 function saveSettings(){ save('ppc-settings', settings); }
 function saveProfile(){ save('ppc-profile', profile); }
 
@@ -910,11 +998,11 @@ function update(dt){
     else { f.y += f.v * dt; f.x -= f.v * 0.25 * dt; if (f.y > H){ f.y = -20; f.x = Math.random() * (W + 200); } }
   }
   zoomT = Math.max(0, zoomT - dt);
-  if (S.state === 'play') tickStats(dt);
+  if (S.state === 'play'){ tickStats(dt); tickLock(dt); }
   if (S.state === 'play') updatePlay(zoomT > 0 ? dt * 0.45 : dt);
   else if (S.state === 'win') updateWin(dt);
   else if (S.state === 'lose'){ loseT += dt; updateMonsters(dt, true); if (loseT > 0.8 && !loseShown){ loseShown = true; show('lose'); } }
-  else if (S.state === 'title' || S.state === 'quiz' || S.state === 'paused' || S.state === 'revive' || S.state === 'shop'){ updateMonsters(dt, true); }
+  else if (S.state === 'title' || S.state === 'locked' || S.state === 'quiz' || S.state === 'paused' || S.state === 'revive' || S.state === 'shop'){ updateMonsters(dt, true); }
   if (L){ var targetCam = clamp(P.x + P.w / 2 - W * 0.4, 0, Math.max(0, L.length - W)); camX += (targetCam - camX) * Math.min(1, dt * 8);
     var targetY = Math.min(0, P.y - 150); camY += (targetY - camY) * Math.min(1, dt * 6); }
 }
@@ -1793,6 +1881,7 @@ function drawHUD(){
   ctx.save();
   ctx.font = '700 22px ' + FONT; ctx.textBaseline = 'middle';
   for (var i = 0; i < maxHearts(); i++){ ctx.fillStyle = i < P.hearts ? '#ff5c8a' : 'rgba(255,255,255,0.25)'; heart(28 + i * 30, 26, 11); }
+  if (lock.daily >= 0){ var leftMs = playLeftMs(); if (leftMs !== Infinity) hudPill(10, 46, 104, function(){ ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(0, 0, 9, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -6); ctx.moveTo(0, 0); ctx.lineTo(4, 2); ctx.stroke(); }, Math.ceil(leftMs / 60000) + ' min'); }
   hudPill(W - 275, 10, 96, function(){ ctx.fillStyle = '#d99a00'; circle(0, 0, 11); ctx.fillStyle = '#ffd23f'; circle(0, 0, 9.5); ctx.fillStyle = '#fff3b0'; star(0, 0, 6); }, S.coins);
   var healOk = typeof canHeal === 'function' && canHeal();
   if (healOk){ ctx.save(); ctx.shadowColor = '#ff8fc8'; ctx.shadowBlur = 16 + Math.sin(S.time * 6) * 6; ctx.fillStyle = 'rgba(255,143,200,0.35)'; rrect(W - 174, 6, 88, 40, 20); ctx.restore(); }
@@ -1992,31 +2081,140 @@ function drawQuizMonster(){
   drawMonster(m);
   P.x = savedP.x; P.y = savedP.y; ctx = saved;
 }
-/* ---------- grown-ups ---------- */
-var playSaveT = 0;
+/* ---------- play time ---------- */
+var playSaveT = 0, minuteWarned = false, lockedFrom = 'title';
 function todayStr(){ var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
-function tickStats(dt){
+function rollDay(){
+  if (lock.day !== todayStr()){ lock.day = todayStr(); lock.played = 0; saveLock(); }
   if (stats.day !== todayStr()){ stats.day = todayStr(); stats.today = 0; }
-  stats.played += dt; stats.today += dt; playSaveT += dt;
-  if (playSaveT > 5){ playSaveT = 0; saveStats(); }
 }
+function dailyLeftMs(){ rollDay(); if (lock.daily < 0) return Infinity; return Math.max(0, lock.daily * 60 - lock.played) * 1000; }
+function grantLeftMs(){ return Math.max(0, (lock.until || 0) - Date.now()); }
+function playLeftMs(){ return Math.max(dailyLeftMs(), grantLeftMs()); }
+function canPlay(){ return playLeftMs() > 0; }
+function minutesText(ms){ if (ms === Infinity) return 'no limit'; var m = Math.ceil(ms / 60000); return m + (m === 1 ? ' minute' : ' minutes'); }
+function tickStats(dt){
+  rollDay(); stats.played += dt; stats.today += dt; lock.played += dt; playSaveT += dt;
+  if (playSaveT > 5){ playSaveT = 0; saveStats(); saveLock(); }
+}
+function tickLock(dt){
+  if (!canPlay()){ lockGame(); return; }
+  var left = playLeftMs();
+  if (left !== Infinity && left < 60000 && !minuteWarned){ minuteWarned = true; banner('One more minute!'); }
+}
+function checkDelayedReset(){
+  if (lock.resetAt && Date.now() > lock.resetAt){ lock.pin = null; lock.methods.pin = false; if (!lock.methods.sum && !lock.methods.phone) lock.methods.sum = true; lock.resetAt = 0; saveLock(); }
+  var pending = lock.resetAt && Date.now() < lock.resetAt;
+  ['resetNotice', 'resetNotice2'].forEach(function(id){ var el = $(id); if (!el) return; el.hidden = !pending; if (pending) el.innerHTML = 'A PIN reset was started. It finishes in about ' + Math.ceil((lock.resetAt - Date.now()) / 3600000) + ' hours. If this was not you, <button class="link-btn" style="margin:0" onclick="window.__cancelReset()">cancel it</button>.'; });
+}
+window.__cancelReset = function(){ lock.resetAt = 0; saveLock(); checkDelayedReset(); };
 function refreshTitle(){
+  checkDelayedReset();
   $('titleName').textContent = 'MyRush';
   $('titleLine').textContent = 'The Grumpy King took all the candies from the castle! Help ' + playerTitle() + ' run across the rooftops, the maidan and the towers, dodge the professor, and bring them back.';
   $('petLine').textContent = profile && profile.pets && profile.pets.length ? 'Friends rescued: ' + profile.pets.join(' ') : '';
   $('treasure').textContent = (total.coins || total.candies) ? ('Treasure chest: ' + total.coins + ' coins and ' + total.candies + ' candies') : 'Your treasure chest is waiting to be filled!';
-  var line = $('lockLine'); line.textContent = stats.wins ? 'Levels won: ' + stats.wins : '';
-  if (isBirthday()){ line.textContent = 'Happy birthday, ' + playerName() + '! ' + line.textContent; }
+  var t = '';
+  if (lock.daily >= 0){
+    if (grantLeftMs() > 0) t = 'Extra play time: ' + minutesText(grantLeftMs()) + '.';
+    else if (dailyLeftMs() > 0) t = 'Free play time today: ' + minutesText(dailyLeftMs()) + '.';
+    else t = 'The free time for today is used up. Ask a grown-up for more.';
+  }
+  if (stats.wins) t += (t ? ' ' : '') + 'Levels won: ' + stats.wins + '.';
+  if (isBirthday()) t = 'Happy birthday, ' + playerName() + '! ' + t;
+  $('lockLine').textContent = t;
   $('playBtn').hidden = false;
 }
+function lockGame(){
+  if (S.state === 'locked') return;
+  lockedFrom = S.state; S.state = 'locked'; clearKeys(); touch = {}; pointers = {}; saveLock();
+  $('lockedTitle').textContent = lockedFrom === 'play' ? "Time's up!" : 'Play time';
+  $('lockedMsg').textContent = lockedFrom === 'play' ? 'Great playing! Ask a grown-up if you may play more.' : 'The free time for today is used up. Ask a grown-up for more time.';
+  checkDelayedReset();
+  hide('title'); hide('settings'); hide('parent'); show('locked');
+}
+function unlockGame(){
+  hide('locked'); minuteWarned = false;
+  if (lockedFrom === 'play' && S.state === 'locked'){ S.state = 'play'; prevJumpHeld = true; prevAttack = true; }
+  else { S.state = 'title'; refreshTitle(); show('title'); }
+}
+$('lockedBack').addEventListener('click', function(){ hide('locked'); S.state = 'title'; refreshTitle(); show('title'); });
+$('askBtn').addEventListener('click', openApprove);
 
-/* ---------- grown-ups panel ---------- */
-var pinBuf = '', pinMsg = '', adult = null, resetArmed = false;
-var KIND_LABELS = { qColor: 'Colours', qCount: 'Counting', qShape: 'Shapes', qBigger: 'Bigger and smaller', qCompare: 'Bigger and smaller', qAnimal: 'Animals', qSound: 'Animal sounds', qMatch: 'Matching', qMore: 'More or fewer', qOdd: 'Odd one out', qAdd: 'Adding', qSub: 'Taking away', qLetter: 'Letters', qWord: 'Words', qPattern: 'Patterns', qNumber: 'Numbers', qTime: 'Time', qMul: 'Times tables', qPickAnimals: 'Animals', qPickFruits: 'Fruits', qPickThings: 'Things around us', qSpellWordsShort: 'Spelling', qSpellWordsLong: 'Spelling', qNext: 'Number that comes next', qDiv: 'Dividing', qOpposite: 'Opposites', qFirstLetter: 'First letters', qClock: 'Reading the clock', qOddEven: 'Odd and even', qCompare: 'Bigger number' };
+/* ---------- approval: sum check, PIN, or code from the parent's phone ---------- */
+var ap = { method: null, buf: '', sum: null };
+function newSum(){ var s = { a: rndi(12, 29), b: rndi(3, 9) }; s.ans = String(s.a * s.b); return s; }
+function enabledMethods(){ var m = []; if (lock.methods.sum) m.push('sum'); if (lock.methods.pin && lock.pin) m.push('pin'); if (lock.methods.phone && lock.secret) m.push('phone'); if (!m.length) m.push('sum'); return m; }
+function openApprove(){
+  var ms = enabledMethods();
+  var row = $('apMethods'); row.innerHTML = ''; row.hidden = ms.length < 2;
+  ms.forEach(function(m){ var b = document.createElement('button'); b.textContent = m === 'sum' ? 'Sum check' : m === 'pin' ? 'PIN' : "Code from phone"; b.setAttribute('data-m', m); row.appendChild(b); });
+  show('approve'); apMethod(ms[0]);
+}
+function apMethod(m){
+  ap.method = m; ap.buf = '';
+  ['apSum', 'apPin', 'apPhone', 'apTime', 'apForgotArea'].forEach(hide);
+  var bs = $('apMethods').children; for (var i = 0; i < bs.length; i++) bs[i].classList.toggle('on', bs[i].getAttribute('data-m') === m);
+  if (m === 'sum'){ ap.sum = newSum(); show('apSum'); renderAp(); }
+  else if (m === 'pin'){ show('apPin'); renderAp(); }
+  else { lock.req = digits(4); saveLock(); $('apReq').textContent = lock.req.slice(0, 2) + ' ' + lock.req.slice(2); show('apPhone'); renderAp(); }
+}
+function apLen(){ return ap.method === 'sum' ? ap.sum.ans.length : ap.method === 'pin' ? 4 : 6; }
+function renderAp(msg){
+  var n = apLen(), dots = '';
+  for (var i = 0; i < n; i++) dots += i < ap.buf.length ? (ap.method === 'pin' ? '●' : ap.buf[i]) : '○';
+  if (ap.method === 'sum'){ $('apSumHint').textContent = msg || ('Grown-ups check: what is ' + ap.sum.a + ' times ' + ap.sum.b + '?'); $('apSumDots').textContent = dots; }
+  else if (ap.method === 'pin'){ $('apPinHint').textContent = msg || 'Enter the grown-ups PIN'; $('apPinDots').textContent = dots; }
+  else { $('apPhoneDots').textContent = msg || dots; }
+}
+function apDigit(d){
+  if ($('approve').hidden || !$('apTime').hidden) return;
+  if (ap.buf.length >= apLen()) return; ap.buf += d; renderAp();
+  if (ap.buf.length === apLen()) setTimeout(apComplete, 160);
+}
+function apDel(){ ap.buf = ap.buf.slice(0, -1); renderAp(); }
+function apComplete(){
+  if (ap.method === 'sum'){ if (ap.buf === ap.sum.ans){ apPassed(); return; } ap.sum = newSum(); ap.buf = ''; renderAp('Not right. Try this one: what is ' + ap.sum.a + ' times ' + ap.sum.b + '?'); }
+  else if (ap.method === 'pin'){ if (ap.buf === lock.pin){ apPassed(); return; } ap.buf = ''; renderAp('Wrong PIN. Try again.'); }
+  else {
+    for (var i = 0; i < GRANTS.length; i++){ if (codeFor(lock.secret, lock.req, GRANTS[i]) === ap.buf){ grant(GRANTS[i]); return; } }
+    ap.buf = ''; renderAp('That code is not right'); setTimeout(function(){ if (ap.method === 'phone') renderAp(); }, 1400);
+  }
+}
+function apPassed(){ ['apSum', 'apPin', 'apPhone'].forEach(hide); show('apTime'); }
+function grant(min){
+  lock.until = Math.max(Date.now(), lock.until || 0) + min * 60000; saveLock();
+  hide('approve'); hide('parent');
+  banner(min + ' more minutes!');
+  if (S.state === 'locked') unlockGame(); else if (S.state === 'title') refreshTitle(); else if (S.state === 'paused' && pausedFrom === 'play'){ S.state = 'play'; pausedFrom = null; prevJumpHeld = true; prevAttack = true; }
+}
+(function(){
+  function pad(id, onDigit, onDel){
+    var el = $(id);
+    ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', ''].forEach(function(k){
+      var b = document.createElement('button'); b.textContent = k; if (k === '') b.style.visibility = 'hidden';
+      b.addEventListener('click', function(){ if (k === '⌫') onDel(); else if (k) onDigit(k); });
+      el.appendChild(b);
+    });
+  }
+  pad('apSumPad', apDigit, apDel); pad('apPinPad', apDigit, apDel); pad('apPhonePad', apDigit, apDel);
+  pad('pinPad', function(d){ pinDigit(d); }, function(){ pinBuf = pinBuf.slice(0, -1); renderPin(); });
+  pad('pinSetPad', function(d){ setDigit(d); }, function(){ setBuf = setBuf.slice(0, -1); renderSet(); });
+})();
+$('apMethods').addEventListener('click', function(e){ var m = e.target.getAttribute('data-m'); if (m) apMethod(m); });
+$('apGrant').addEventListener('click', function(e){ var m = e.target.getAttribute('data-min'); if (m) grant(parseInt(m, 10)); });
+$('apForgot').addEventListener('click', function(){ hide('apPin'); show('apForgotArea'); });
+$('apForgotBack').addEventListener('click', function(){ hide('apForgotArea'); apMethod('pin'); });
+$('apDelayReset').addEventListener('click', function(){ lock.resetAt = Date.now() + 24 * 3600000; saveLock(); hide('approve'); checkDelayedReset(); });
+$('apClose').addEventListener('click', function(){ hide('approve'); });
+
+/* ---------- grown-ups page ---------- */
+var pinBuf = '', pinMsg = '', adult = null, resetArmed = false, setBuf = '', setFirst = '', setMode = null;
+var KIND_LABELS = { qColor: 'Colours', qCount: 'Counting', qShape: 'Shapes', qBigger: 'Bigger and smaller', qCompare: 'Bigger number', qAdd: 'Adding', qSub: 'Taking away', qLetter: 'Letters', qPattern: 'Patterns', qMul: 'Times tables', qPickAnimals: 'Animals', qPickFruits: 'Fruits', qPickThings: 'Things around us', qSpellWordsShort: 'Spelling', qSpellWordsLong: 'Spelling', qNext: 'Number that comes next', qDiv: 'Dividing', qOpposite: 'Opposites', qFirstLetter: 'First letters', qClock: 'Reading the clock', qOddEven: 'Odd and even' };
 function kindLabel(k){ k = String(k).replace(/\d+$/, ''); if (KIND_LABELS[k]) return KIND_LABELS[k]; if (!/^q[A-Z]/.test(k)) return 'Other'; var s = k.slice(1).replace(/([A-Z])/g, ' $1').trim(); return s.charAt(0).toUpperCase() + s.slice(1); }
-function areas(which){ ['pinArea', 'parentSettings'].forEach(function(id){ $(id).hidden = id !== which; }); }
+function areas(which){ ['pinArea', 'parentSettings', 'parentKey'].forEach(function(id){ $(id).hidden = id !== which; }); }
 function newAdult(){ adult = { a: rndi(12, 29), b: rndi(3, 9) }; adult.ans = String(adult.a * adult.b); }
-function openParent(){ pinBuf = ''; pinMsg = ''; resetArmed = false; newAdult(); areas('pinArea'); renderPin(); show('parent'); }
+function openParent(){ pinBuf = ''; pinMsg = ''; resetArmed = false; setMode = null; newAdult(); areas('pinArea'); renderPin(); show('parent'); }
 function renderPin(){
   $('pinHint').textContent = pinMsg || ('Grown-ups check: what is ' + adult.a + ' times ' + adult.b + '? Type the answer.'); pinMsg = '';
   var dots = ''; for (var i = 0; i < adult.ans.length; i++) dots += i < pinBuf.length ? pinBuf[i] : '○';
@@ -2032,8 +2230,7 @@ function pinComplete(){
 }
 function mins(sec){ var m = Math.round((sec || 0) / 60); return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + (m % 60) + ' min'; }
 function showSettingsArea(){
-  areas('parentSettings');
-  if (stats.day !== todayStr()){ stats.day = todayStr(); stats.today = 0; }
+  areas('parentSettings'); rollDay();
   var rows = [], pct = stats.asked ? Math.round(100 * (stats.right || 0) / stats.asked) : 0;
   rows.push(['Played today', mins(stats.today)]);
   rows.push(['Played in total', mins(stats.played)]);
@@ -2046,21 +2243,56 @@ function showSettingsArea(){
   for (var i = 0; i < kinds.length; i++){ var kt = stats.types[kinds[i]]; rows.push(['&nbsp;&nbsp;' + kindLabel(kinds[i]), kt.right + ' of ' + kt.asked]); }
   var html = ''; for (i = 0; i < rows.length; i++) html += '<span>' + rows[i][0] + '</span><b>' + rows[i][1] + '</b>';
   $('report').innerHTML = html;
+  // play time
+  var dr = $('dailyRow').children; for (i = 0; i < dr.length; i++) dr[i].classList.toggle('on', parseInt(dr[i].getAttribute('data-daily'), 10) === lock.daily);
+  var info = lock.daily < 0 ? 'No time limit. The child can play any time.' : lock.daily === 0 ? 'No free time: a grown-up must approve every play session.' : 'Free time left today: ' + minutesText(dailyLeftMs()) + '.';
+  if (grantLeftMs() > 0) info += ' Extra time given now: ' + minutesText(grantLeftMs()) + '.';
+  $('timeInfo').textContent = info;
+  var mr = $('methodRow').children; for (i = 0; i < mr.length; i++){ var key = mr[i].getAttribute('data-m'); mr[i].classList.toggle('on', !!lock.methods[key]); }
+  $('methodNote').textContent = 'Sum check: a two-digit times sum, fine for young children. PIN: a 4-digit code you enter on this device. Parent\u2019s phone: the child reads a request code to you and you reply with a 6-digit approval code from your own phone, even from another room.';
+  $('pinSetup').hidden = setMode === null;
+  $('phoneSetup').hidden = !lock.methods.phone;
+  if (lock.methods.phone && lock.secret) $('pairCode').textContent = lock.secret.slice(0, 4) + ' ' + lock.secret.slice(4);
+  $('pinState').textContent = lock.methods.pin ? (lock.pin ? 'PIN is set.' : 'No PIN yet.') : '';
+  $('changePinBtn').hidden = !lock.methods.pin;
+  // questions and monsters
   var qr = $('qRow').children; for (i = 0; i < qr.length; i++) qr[i].classList.toggle('on', qr[i].getAttribute('data-q') === settings.qmode);
-  var dr = $('diffRow').children; for (i = 0; i < dr.length; i++) dr[i].classList.toggle('on', dr[i].getAttribute('data-diff') === settings.diff);
+  var dr2 = $('diffRow').children; for (i = 0; i < dr2.length; i++) dr2[i].classList.toggle('on', dr2[i].getAttribute('data-diff') === settings.diff);
   $('qNote').textContent = settings.qmode === 'off' ? 'The professor stays home. No questions in the levels.' : settings.qmode === 'easier' ? 'Questions from one age group younger.' : settings.qmode === 'harder' ? 'Questions from one age group older.' : 'Questions are picked from the birthday: ' + ['3 to 4', '5 to 6', '7 to 8', '9 and up'][tierForAge(playerAge())] + ' years.';
   $('diffNote').textContent = settings.diff === 'gentle' ? 'Only the Grumpy King and the red grumpies can hurt. Monsters are slower and the King is weaker.' : settings.diff === 'brave' ? 'Faster monsters and a tougher Grumpy King.' : 'Spiky monsters, cyclopses and diving birds also hurt from level 2.';
   $('resetNote').hidden = !resetArmed;
   $('resetProgress').textContent = resetArmed ? 'Yes, reset everything' : 'Reset progress';
 }
-(function(){
-  var el = $('pinPad');
-  ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', ''].forEach(function(k){
-    var b = document.createElement('button'); b.textContent = k; if (k === '') b.style.visibility = 'hidden';
-    b.addEventListener('click', function(){ if (k === '⌫'){ pinBuf = pinBuf.slice(0, -1); renderPin(); } else if (k) pinDigit(k); });
-    el.appendChild(b);
-  });
-})();
+function startPinSetup(){ setMode = 'first'; setBuf = ''; setFirst = ''; $('pinSetup').hidden = false; renderSet(); }
+function renderSet(msg){
+  var dots = ''; for (var i = 0; i < 4; i++) dots += i < setBuf.length ? '●' : '○';
+  $('pinSetHint').textContent = msg || (setMode === 'first' ? 'Create a 4-digit PIN that only grown-ups know' : 'Type the same PIN once more');
+  $('pinSetDots').textContent = dots;
+}
+function setDigit(d){
+  if (setMode === null || setBuf.length >= 4) return; setBuf += d; renderSet();
+  if (setBuf.length === 4) setTimeout(function(){
+    if (setMode === 'first'){ setFirst = setBuf; setBuf = ''; setMode = 'second'; renderSet(); }
+    else if (setBuf === setFirst){ lock.pin = setBuf; lock.methods.pin = true; lock.resetAt = 0; saveLock(); setMode = null; showSettingsArea(); }
+    else { setBuf = ''; setMode = 'first'; renderSet('Those did not match. Start again.'); }
+  }, 160);
+}
+$('dailyRow').addEventListener('click', function(e){ var d = e.target.getAttribute('data-daily'); if (d != null){ lock.daily = parseInt(d, 10); saveLock(); showSettingsArea(); } });
+$('methodRow').addEventListener('click', function(e){
+  var m = e.target.getAttribute('data-m'); if (!m) return;
+  if (lock.methods[m]){ if (lock.methods.sum + lock.methods.pin + lock.methods.phone <= 1) return; lock.methods[m] = false; if (m === 'pin') setMode = null; }
+  else {
+    lock.methods[m] = true;
+    if (m === 'pin' && !lock.pin){ startPinSetup(); }
+    if (m === 'phone' && !lock.secret){ lock.secret = digits(8); }
+  }
+  saveLock(); showSettingsArea();
+});
+$('changePinBtn').addEventListener('click', function(){ startPinSetup(); });
+$('pinSetCancel').addEventListener('click', function(){ setMode = null; if (!lock.pin) lock.methods.pin = false; if (!lock.methods.sum && !lock.methods.pin && !lock.methods.phone) lock.methods.sum = true; saveLock(); showSettingsArea(); });
+$('newPair').addEventListener('click', function(){ lock.secret = digits(8); saveLock(); showSettingsArea(); });
+$('grantRow').addEventListener('click', function(e){ var m = e.target.getAttribute('data-min'); if (m){ grant(parseInt(m, 10)); } });
+$('lockNowBtn').addEventListener('click', function(){ lock.until = 0; lock.played = Math.max(lock.played, lock.daily > 0 ? lock.daily * 60 : 0); saveLock(); hide('parent'); hide('settings'); pausedFrom = null; lockGame(); });
 $('qRow').addEventListener('click', function(e){ var v = e.target.getAttribute('data-q'); if (v){ settings.qmode = v; saveSettings(); showSettingsArea(); } });
 $('diffRow').addEventListener('click', function(e){ var v = e.target.getAttribute('data-diff'); if (v){ settings.diff = v; saveSettings(); showSettingsArea(); } });
 $('editChild').addEventListener('click', function(){ hide('parent'); pausedFrom = null; if (S.state === 'paused') S.state = 'title'; openSetup(); });
@@ -2074,6 +2306,23 @@ $('resetProgress').addEventListener('click', function(){
 });
 $('parentClose').addEventListener('click', function(){ hide('parent'); if (pausedFrom === 'play' && S.state === 'paused'){ show('settings'); } else if (S.state === 'title') refreshTitle(); });
 $('grownupsBtn3').addEventListener('click', function(){ hide('settings'); openParent(); });
+
+/* ---------- Parent Key (runs on the grown-up's own phone) ---------- */
+var pkey = load('ppc-parentkey', { secret: '' });
+function openParentKey(){ areas('parentKey'); $('pairInput').value = pkey.secret || ''; $('reqInput').value = ''; $('keyOut').textContent = '------'; $('keyMsg').textContent = ''; }
+function keyCompute(min){
+  var sec = $('pairInput').value.replace(/\D/g, ''), req = $('reqInput').value.replace(/\D/g, '');
+  if (sec.length !== 8){ $('keyMsg').textContent = 'Type the 8-digit pairing code from the child\u2019s device first.'; return; }
+  if (req.length !== 4){ $('keyMsg').textContent = 'Type the 4-digit request code shown on the child\u2019s screen.'; return; }
+  pkey.secret = sec; save('ppc-parentkey', pkey);
+  var c = codeFor(sec, req, min); $('keyOut').textContent = c.slice(0, 3) + ' ' + c.slice(3);
+  $('keyMsg').textContent = 'Read this code to the child, or type it on their device. It gives ' + min + ' minutes.';
+  var kb = $('keyGrant').children; for (var i = 0; i < kb.length; i++) kb[i].classList.toggle('on', parseInt(kb[i].getAttribute('data-min'), 10) === min);
+}
+$('parentKeyBtn').addEventListener('click', openParentKey);
+$('parentKeyBtn2').addEventListener('click', openParentKey);
+$('keyGrant').addEventListener('click', function(e){ var m = e.target.getAttribute('data-min'); if (m) keyCompute(parseInt(m, 10)); });
+$('keyBack').addEventListener('click', function(){ areas('pinArea'); renderPin(); });
 
 /* ---------- settings ---------- */
 function openSettings(){
@@ -2134,9 +2383,11 @@ window.addEventListener('keydown', function(e){
   if (tag === 'INPUT') return;
   lastInput = 'key';
   if (k === 'c' && S.state === 'play'){ tryCandyHeal(); return; }
+  if (!$('approve').hidden){ if (/^[0-9]$/.test(k)) apDigit(k); else if (k === 'backspace') apDel(); return; }
   if (!$('parent').hidden){
-    if (/^[0-9]$/.test(k)) pinDigit(k);
-    else if (k === 'backspace'){ pinBuf = pinBuf.slice(0, -1); renderPin(); }
+    if (tag === 'INPUT') return;
+    if (/^[0-9]$/.test(k)){ if (setMode !== null) setDigit(k); else pinDigit(k); }
+    else if (k === 'backspace'){ if (setMode !== null){ setBuf = setBuf.slice(0, -1); renderSet(); } else { pinBuf = pinBuf.slice(0, -1); renderPin(); } }
     return;
   }
   if (k === 'escape'){ if (S.state === 'play') openSettings(); else if (S.state === 'paused') closeSettings(); return; }
@@ -2176,7 +2427,7 @@ window.addEventListener('pointercancel', pointerEnd);
 window.addEventListener('blur', function(){ pointers = {}; touch = {}; clearKeys(); });
 document.addEventListener('visibilitychange', function(){ if (document.hidden){ pointers = {}; touch = {}; clearKeys(); } });
 
-$('playBtn').addEventListener('click', function(){ audioOn(); S.level = 1; S.coins = 0; S.candies = 0; startLevel(); });
+$('playBtn').addEventListener('click', function(){ audioOn(); if (!canPlay()){ lockGame(); return; } S.level = 1; S.coins = 0; S.candies = 0; startLevel(); });
 $('nextBtn').addEventListener('click', function(){ audioOn(); S.level++; startLevel(); });
 $('retryBtn').addEventListener('click', function(){ audioOn(); startLevel(); });
 $('quizSpeak').addEventListener('click', function(){ if (quiz.q) say(quiz.q.q); });
@@ -2236,12 +2487,13 @@ function showTitle(){
   if (!profile){ S.state = 'title'; openSetup(); }
   else { refreshTitle(); show('title'); }
 }
+checkDelayedReset();
 showTitle();
 requestAnimationFrame(frame);
 if (window.speechSynthesis && speechSynthesis.getVoices) speechSynthesis.getVoices();
 
 window.__PPC = { S: S, P: P, step: function(dt, n){ for (var i = 0; i < (n || 1); i++) update(dt || 1 / 60); draw(); }, keys: keys,
-  get L(){ return L; }, get monsters(){ return monsters; }, get pickups(){ return pickups; }, get bolts(){ return bolts; }, get camX(){ return camX; }, get stats(){ return stats; }, get zoomT(){ return zoomT; }, get quiz(){ return quiz; },
+  get L(){ return L; }, get monsters(){ return monsters; }, get pickups(){ return pickups; }, get bolts(){ return bolts; }, get camX(){ return camX; }, get stats(){ return stats; }, get lock(){ return lock; }, get zoomT(){ return zoomT; }, codeFor: codeFor, grant: grant, lockGame: lockGame, openApprove: openApprove, apDigit: apDigit, canPlay: canPlay, get quiz(){ return quiz; },
   get profile(){ return profile; }, set profile(v){ profile = v; saveProfile(); },
   startLevel: startLevel, startWin: startWin, spawnBolt: spawnBolt, collect: collect, openParent: openParent, showSettingsArea: showSettingsArea, openQuiz: openQuiz, answerQuiz: answerQuiz, closeQuiz: closeQuiz, makeQuestion: makeQuestion, tierForAge: tierForAge, TIERS: TIERS, karate: karate, refreshTitle: refreshTitle, outOfHearts: outOfHearts, hurtPrincess: hurtPrincess, revive: revive, set touch(v){ touch = v; }, portrait: function(c2, o){ var saved = ctx; ctx = c2; try { drawCharacter(o); } finally { ctx = saved; } }, makeMonster: makeMonster, drawMonsterTo: function(c2, m){ var saved = ctx; ctx = c2; try { drawMonster(m); } finally { ctx = saved; } } };
 })();
