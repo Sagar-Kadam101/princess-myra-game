@@ -329,7 +329,12 @@
       <p class="small" id="pinHint"></p>
       <div class="pin-dots" id="pinDots"></div>
       <div class="pad" id="pinPad"></div>
+      <div><button class="link-btn" id="gateForgot" hidden>Forgot the PIN?</button></div>
       <div><button class="link-btn" id="parentKeyBtn2">Parent Key: I am on the grown-up's phone</button></div>
+    </div>
+    <div id="gateForgotArea" hidden>
+      <p class="small">Without the PIN you can start a 24-hour reset. A notice shows on the start screen the whole time, so you can cancel it if a child started it. After 24 hours the PIN is removed and the sum check is used instead.</p>
+      <div class="row"><button id="gateDelayReset" class="warn">Reset PIN in 24 hours</button><button id="gateForgotBack">Back</button></div>
     </div>
     <div id="parentSettings" hidden>
       <p class="small" id="parentWho"></p>
@@ -2495,7 +2500,19 @@ function drawQuizMonster(){
 /* ---------- play time ---------- */
 var playSaveT = 0, minuteWarned = false, lockedFrom = 'title';
 function todayStr(){ var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+function clockGuard(){
+  var now = Date.now();
+  if (lock.lastSeen && now < lock.lastSeen - 10 * 60000){
+    lock.played = Math.max(lock.played || 0, lock.daily > 0 ? lock.daily * 60 : 0); lock.until = Math.min(lock.until || 0, now); lock.clockNote = true; lock.day = todayStr();
+  }
+  lock.lastSeen = now;
+}
+function failsBlockedMs(){ return Math.max(0, (lock.failUntil || 0) - Date.now()); }
+function noteFail(){ lock.fails = (lock.fails || 0) + 1; if (lock.fails >= 3){ var waitS = Math.min(300, 30 * Math.pow(2, lock.fails - 3)); lock.failUntil = Date.now() + waitS * 1000; } saveLock(); }
+function clearFails(){ lock.fails = 0; lock.failUntil = 0; saveLock(); }
+function waitText(){ var s = Math.ceil(failsBlockedMs() / 1000); return 'Too many tries. Wait ' + (s >= 60 ? Math.ceil(s / 60) + ' minute' + (s >= 120 ? 's' : '') : s + ' seconds') + '.'; }
 function rollDay(){
+  clockGuard();
   if (lock.day !== todayStr()){ lock.day = todayStr(); lock.played = 0; saveLock(); }
   if (stats.day !== todayStr()){ stats.day = todayStr(); stats.today = 0; }
 }
@@ -2506,7 +2523,7 @@ function canPlay(){ return playLeftMs() > 0; }
 function minutesText(ms){ if (ms === Infinity) return 'no limit'; var m = Math.ceil(ms / 60000); return m + (m === 1 ? ' minute' : ' minutes'); }
 function tickStats(dt){
   rollDay(); stats.played += dt; stats.today += dt; lock.played += dt; playSaveT += dt;
-  if (playSaveT > 5){ playSaveT = 0; saveStats(); saveLock(); }
+  if (playSaveT > 5){ playSaveT = 0; lock.lastSeen = Date.now(); saveStats(); saveLock(); }
 }
 function tickLock(dt){
   if (!canPlay()){ lockGame(); return; }
@@ -2583,16 +2600,17 @@ function renderAp(msg){
 }
 function apDigit(d){
   if ($('approve').hidden || !$('apTime').hidden) return;
+  if (failsBlockedMs() > 0){ renderAp(waitText()); return; }
   if (ap.buf.length >= apLen()) return; ap.buf += d; renderAp();
   if (ap.buf.length === apLen()) setTimeout(apComplete, 160);
 }
 function apDel(){ ap.buf = ap.buf.slice(0, -1); renderAp(); }
 function apComplete(){
   if (ap.method === 'sum'){ if (ap.buf === ap.sum.ans){ apPassed(); return; } ap.sum = newSum(); ap.buf = ''; renderAp('Not right. Try this one: what is ' + ap.sum.a + ' times ' + ap.sum.b + '?'); }
-  else if (ap.method === 'pin'){ if (ap.buf === lock.pin){ apPassed(); return; } ap.buf = ''; renderAp('Wrong PIN. Try again.'); }
+  else if (ap.method === 'pin'){ if (ap.buf === lock.pin){ clearFails(); apPassed(); return; } noteFail(); ap.buf = ''; renderAp(failsBlockedMs() > 0 ? waitText() : 'Wrong PIN. Try again.'); }
   else {
-    for (var i = 0; i < GRANTS.length; i++){ if (codeFor(lock.secret, lock.req, GRANTS[i]) === ap.buf){ grant(GRANTS[i]); return; } }
-    ap.buf = ''; renderAp('That code is not right'); setTimeout(function(){ if (ap.method === 'phone') renderAp(); }, 1400);
+    for (var i = 0; i < GRANTS.length; i++){ if (codeFor(lock.secret, lock.req, GRANTS[i]) === ap.buf){ clearFails(); grant(GRANTS[i]); return; } }
+    noteFail(); ap.buf = ''; renderAp(failsBlockedMs() > 0 ? waitText() : 'That code is not right'); setTimeout(function(){ if (ap.method === 'phone') renderAp(); }, 1400);
   }
 }
 function apPassed(){ ['apSum', 'apPin', 'apPhone'].forEach(hide); show('apTime'); }
@@ -2628,19 +2646,23 @@ var KIND_LABELS = { qColor: 'Colours', qCount: 'Counting', qShape: 'Shapes', qBi
 function kindLabel(k){ k = String(k).replace(/\d+$/, ''); if (KIND_LABELS[k]) return KIND_LABELS[k]; if (!/^q[A-Z]/.test(k)) return 'Other'; var s = k.slice(1).replace(/([A-Z])/g, ' $1').trim(); return s.charAt(0).toUpperCase() + s.slice(1); }
 function areas(which){ ['pinArea', 'parentSettings', 'parentKey'].forEach(function(id){ $(id).hidden = id !== which; }); }
 function newAdult(){ adult = { a: rndi(12, 29), b: rndi(3, 9) }; adult.ans = String(adult.a * adult.b); }
-function openParent(){ pinBuf = ''; pinMsg = ''; resetArmed = false; setMode = null; newAdult(); areas('pinArea'); renderPin(); show('parent'); }
+var gateMode = 'sum';
+function openParent(){ pinBuf = ''; pinMsg = ''; resetArmed = false; setMode = null; newAdult(); gateMode = (lock.methods && lock.methods.pin && lock.pin) ? 'pin' : 'sum'; $('gateForgot').hidden = gateMode !== 'pin'; $('gateForgotArea').hidden = true; areas('pinArea'); renderPin(); show('parent'); }
+function gateLen(){ return gateMode === 'pin' ? 4 : adult.ans.length; }
 function renderPin(){
-  $('pinHint').textContent = pinMsg || ('Grown-ups check: what is ' + adult.a + ' times ' + adult.b + '? Type the answer.'); pinMsg = '';
-  var dots = ''; for (var i = 0; i < adult.ans.length; i++) dots += i < pinBuf.length ? pinBuf[i] : '○';
+  $('pinHint').textContent = pinMsg || (failsBlockedMs() > 0 ? waitText() : gateMode === 'pin' ? 'Enter the grown-ups PIN' : 'Grown-ups check: what is ' + adult.a + ' times ' + adult.b + '? Type the answer.'); pinMsg = '';
+  var dots = ''; for (var i = 0; i < gateLen(); i++) dots += i < pinBuf.length ? (gateMode === 'pin' ? '●' : pinBuf[i]) : '○';
   $('pinDots').textContent = dots;
 }
 function pinDigit(d){
-  if (pinBuf.length >= adult.ans.length) return; pinBuf += d; renderPin();
-  if (pinBuf.length === adult.ans.length) setTimeout(pinComplete, 180);
+  if (failsBlockedMs() > 0){ renderPin(); return; }
+  if (pinBuf.length >= gateLen()) return; pinBuf += d; renderPin();
+  if (pinBuf.length === gateLen()) setTimeout(pinComplete, 180);
 }
 function pinComplete(){
-  if (pinBuf === adult.ans){ showSettingsArea(); return; }
-  pinMsg = 'That is not right. Try once more.'; pinBuf = ''; newAdult(); renderPin();
+  if (gateMode === 'pin'){ if (pinBuf === lock.pin){ clearFails(); showSettingsArea(); return; } noteFail(); pinMsg = failsBlockedMs() > 0 ? waitText() : 'Wrong PIN. Try again.'; pinBuf = ''; renderPin(); return; }
+  if (pinBuf === adult.ans){ clearFails(); showSettingsArea(); return; }
+  noteFail(); pinMsg = failsBlockedMs() > 0 ? waitText() : 'That is not right. Try once more.'; pinBuf = ''; newAdult(); renderPin();
 }
 function mins(sec){ var m = Math.round((sec || 0) / 60); return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + (m % 60) + ' min'; }
 function showSettingsArea(){
@@ -2661,6 +2683,7 @@ function showSettingsArea(){
   var dr = $('dailyRow').children; for (i = 0; i < dr.length; i++) dr[i].classList.toggle('on', parseInt(dr[i].getAttribute('data-daily'), 10) === lock.daily);
   var info = lock.daily < 0 ? 'No time limit. The child can play any time.' : lock.daily === 0 ? 'No free time: a grown-up must approve every play session.' : 'Free time left today: ' + minutesText(dailyLeftMs()) + '.';
   if (grantLeftMs() > 0) info += ' Extra time given now: ' + minutesText(grantLeftMs()) + '.';
+  if (lock.clockNote){ info += ' The clock on this device was moved backwards, so free time was paused until a grown-up approved play.'; lock.clockNote = false; saveLock(); }
   $('timeInfo').textContent = info;
   var mr = $('methodRow').children; for (i = 0; i < mr.length; i++){ var key = mr[i].getAttribute('data-m'); mr[i].classList.toggle('on', !!lock.methods[key]); }
   $('methodNote').textContent = 'Sum check: a two-digit times sum, fine for young children. PIN: a 4-digit code you enter on this device. Parent\u2019s phone: the child reads a request code to you and you reply with a 6-digit approval code from your own phone, even from another room.';
@@ -2725,6 +2748,9 @@ function renderPlayers(){
   });
   var add = document.createElement('button'); add.textContent = 'Add a player'; add.disabled = profiles.length >= 6; add.addEventListener('click', function(){ hide('parent'); pausedFrom = null; if (S.state === 'paused') S.state = 'title'; openSetup(true); }); box.appendChild(add);
 }
+$('gateForgot').addEventListener('click', function(){ $('pinArea').hidden = true; $('gateForgotArea').hidden = false; });
+$('gateForgotBack').addEventListener('click', function(){ $('gateForgotArea').hidden = true; $('pinArea').hidden = false; renderPin(); });
+$('gateDelayReset').addEventListener('click', function(){ lock.resetAt = Date.now() + 24 * 3600000; saveLock(); hide('parent'); checkDelayedReset(); if (S.state === 'title') refreshTitle(); });
 $('pairHelpBtn').addEventListener('click', function(){ $('pairHelp').hidden = !$('pairHelp').hidden; });
 $('apPairHelpBtn').addEventListener('click', function(){ $('apPairHelp').hidden = !$('apPairHelp').hidden; });
 $('resetProgress').addEventListener('click', function(){
