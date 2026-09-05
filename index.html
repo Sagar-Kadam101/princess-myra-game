@@ -2718,7 +2718,7 @@ function showSettingsArea(){
   if (lock.clockNote){ info += ' The clock on this device was moved backwards, so free time was paused until a grown-up approved play. See the calendar below.'; lock.clockNote = false; saveLock(); }
   $('timeInfo').textContent = info;
   var mr = $('methodRow').children; for (i = 0; i < mr.length; i++){ var key = mr[i].getAttribute('data-m'); mr[i].classList.toggle('on', !!lock.methods[key]); }
-  $('methodNote').textContent = 'Sum check: a two-digit times sum, fine for young children. PIN: a 4-digit code you enter on this device. Parent\u2019s phone: the child reads a request code to you and you reply with a 6-digit approval code from your own phone, even from another room.';
+  $('methodNote').textContent = 'Sum check: a two-digit times sum, fine for young children. PIN: a 4-digit code you enter on this device. Parent\u2019s phone: you read a 4-digit code from your own phone to the child, even from another room. It changes every 15 minutes and works once.';
   $('pinSetup').hidden = setMode === null;
   $('phoneSetup').hidden = !lock.methods.phone;
   if (lock.methods.phone && lock.secret) $('pairCode').textContent = lock.secret.slice(0, 4) + ' ' + lock.secret.slice(4);
