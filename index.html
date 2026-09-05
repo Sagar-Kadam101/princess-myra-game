@@ -82,7 +82,9 @@
   #parent .small { margin:4px 0; }
   .report b { color:#ffd23f; font-weight:700; }
   #winPet { font-size:clamp(17px,3vw,23px); }
-  #winPet .bigpet { font-size:clamp(44px,8vw,64px); line-height:1.1; display:inline-block; }
+  #winPet .petcv { display:inline-block; width:150px; height:120px; }
+  .petmini { display:inline-block; width:44px; height:40px; vertical-align:middle; margin:0 2px; }
+  #petLine { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:2px; }
   .notice { background:rgba(255,92,138,0.25); border:2px solid #ff8fc8; border-radius:14px; padding:6px 12px; margin:8px 0; font-size:clamp(12px,2.2vw,16px); }
   .mcanvas { display:block; margin:0 auto 4px; }
   .shop { text-align:left; max-height:44vh; overflow:auto; }
@@ -1355,7 +1357,7 @@ function updateWin(dt){
     winShown = true;
     $('winLine').textContent = playerName() + ' made it home to the castle!';
     var pet = PETS[(S.level - 1) % PETS.length]; if (profile && profile.pets.indexOf(pet[1]) < 0){ profile.pets.push(pet[1]); saveProfile(); }
-    $('winPet').innerHTML = '<span class="bigpet">' + pet[1] + '</span><br>A ' + pet[0] + ' was hiding in the castle. It is your friend now!';
+    $('winPet').innerHTML = '<canvas class="petcv" width="150" height="120"></canvas><br>A ' + pet[0] + ' was hiding in the castle. It is your friend now!'; petPortrait($('winPet').querySelector('canvas'), pet[0]);
     $('winQ').textContent = S.levelQuestions ? 'Questions answered: ' + S.levelQuestions : '';
     sayP('win');
     $('winCoins').textContent = S.levelCoins;
@@ -1511,16 +1513,71 @@ function drawWorld(){
   drawGoalCastle();
   if (L.pet && L.pet.state === 'waiting') drawPet();
 }
+
+/* ---------- pets drawn as vector art (emoji looked blurry and shadowed on phones) ---------- */
+var PET_ART = {
+  kitten:   { head: '#ffb46e', dark: '#e08a3c', body: '#ffb46e', ear: 'tri', inner: '#ffd9c2', nose: 'tri', whiskers: true, tail: 'curl' },
+  puppy:    { head: '#d1955e', dark: '#9c6234', body: '#d1955e', ear: 'floppy', inner: '#9c6234', nose: 'round', tongue: true, tail: 'wag' },
+  bunny:    { head: '#fbfbfb', dark: '#d8cfe0', body: '#fbfbfb', ear: 'tall', inner: '#ffb6c9', nose: 'tri', whiskers: true, tail: 'puff' },
+  chick:    { head: '#ffe14a', dark: '#e0b400', body: '#ffe14a', ear: 'none', beak: 'tri', wings: true, feet: '#ff9d2e' },
+  panda:    { head: '#fbfbfb', dark: '#2b2b2b', body: '#fbfbfb', ear: 'round', inner: '#2b2b2b', patches: true, nose: 'round' },
+  pony:     { head: '#d9a066', dark: '#a86f3c', body: '#d9a066', ear: 'point', inner: '#f0c9a0', snout: true, mane: '#ff8fc8', tail: 'mane' },
+  duckling: { head: '#ffd23f', dark: '#e0a800', body: '#ffd23f', ear: 'none', beak: 'flat', wings: true, feet: '#ff9d2e' },
+  koala:    { head: '#9aa5b1', dark: '#6b7682', body: '#9aa5b1', ear: 'fluffy', inner: '#f2c2cc', nose: 'big' }
+};
+function petName(emojiOrName){ for (var i = 0; i < PETS.length; i++) if (PETS[i][0] === emojiOrName || PETS[i][1] === emojiOrName) return PETS[i][0]; return 'kitten'; }
+function drawPetArt(name, x, y, s, t, facing){
+  var A = PET_ART[name] || PET_ART.kitten, f = facing || 1, bob = Math.abs(Math.sin(t * 5)) * s * 0.05;
+  var r = s * 0.3, hy = -s * 0.64, by = -s * 0.27, lw = Math.max(1.5, s * 0.035), OUTC = 'rgba(40,20,80,0.55)';
+  function o(fn){ fn(); ctx.fill(); ctx.strokeStyle = OUTC; ctx.lineWidth = lw; ctx.lineJoin = 'round'; ctx.stroke(); }
+  ctx.save(); ctx.translate(x, y);
+  ctx.fillStyle = 'rgba(0,0,0,0.18)'; ellipse(0, 1, s * 0.32, s * 0.06);
+  ctx.translate(0, -bob); ctx.scale(f, 1);
+  // tail behind the body
+  if (A.tail === 'curl'){ ctx.strokeStyle = A.dark; ctx.lineWidth = s * 0.07; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-s * 0.22, by + s * 0.08); ctx.quadraticCurveTo(-s * 0.45, by + s * 0.1, -s * 0.42, by - s * 0.22 + Math.sin(t * 4) * s * 0.04); ctx.stroke(); }
+  if (A.tail === 'wag'){ ctx.strokeStyle = A.dark; ctx.lineWidth = s * 0.07; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-s * 0.22, by); ctx.lineTo(-s * 0.4, by - s * 0.18 + Math.sin(t * 12) * s * 0.08); ctx.stroke(); }
+  if (A.tail === 'mane'){ ctx.fillStyle = A.mane; o(function(){ ctx.beginPath(); ctx.moveTo(-s * 0.2, by - s * 0.05); ctx.quadraticCurveTo(-s * 0.5, by, -s * 0.42, by + s * 0.28); ctx.quadraticCurveTo(-s * 0.3, by + s * 0.1, -s * 0.2, by + s * 0.12); ctx.closePath(); }); }
+  if (A.tail === 'puff'){ ctx.fillStyle = A.head; o(function(){ ctx.beginPath(); ctx.arc(-s * 0.26, by + s * 0.02, s * 0.08, 0, TAU); }); }
+  // body and legs
+  ctx.fillStyle = A.body; o(function(){ ctx.beginPath(); ctx.ellipse(0, by, s * 0.25, s * 0.2, 0, 0, TAU); });
+  if (A.feet){ ctx.fillStyle = A.feet; ctx.beginPath(); ctx.ellipse(-s * 0.09, -s * 0.02, s * 0.09, s * 0.035, 0, 0, TAU); ctx.ellipse(s * 0.12, -s * 0.02, s * 0.09, s * 0.035, 0, 0, TAU); ctx.fill(); }
+  else { ctx.fillStyle = A.body; o(function(){ ctx.beginPath(); ctx.moveTo(-s * 0.18, by + s * 0.1); ctx.lineTo(-s * 0.18, -s * 0.02); ctx.quadraticCurveTo(-s * 0.18, s * 0.02, -s * 0.13, s * 0.02); ctx.lineTo(-s * 0.05, s * 0.02); ctx.quadraticCurveTo(0, s * 0.02, 0, -s * 0.02); ctx.lineTo(0, by + s * 0.1); ctx.closePath(); }); o(function(){ ctx.beginPath(); ctx.moveTo(s * 0.04, by + s * 0.1); ctx.lineTo(s * 0.04, -s * 0.02); ctx.quadraticCurveTo(s * 0.04, s * 0.02, s * 0.09, s * 0.02); ctx.lineTo(s * 0.17, s * 0.02); ctx.quadraticCurveTo(s * 0.22, s * 0.02, s * 0.22, -s * 0.02); ctx.lineTo(s * 0.22, by + s * 0.1); ctx.closePath(); }); }
+  if (A.wings){ ctx.fillStyle = A.dark; o(function(){ ctx.beginPath(); ctx.ellipse(-s * 0.2, by - s * 0.02, s * 0.1, s * 0.16, 0.5, 0, TAU); }); }
+  // ears behind the head
+  if (A.ear === 'tall'){ ['-', '+'].forEach(function(sg){ var ex = (sg === '-' ? -1 : 1) * r * 0.45; ctx.fillStyle = A.head; o(function(){ ctx.beginPath(); ctx.ellipse(ex, hy - r * 1.35, r * 0.3, r * 0.85, (sg === '-' ? -0.15 : 0.15), 0, TAU); }); ctx.fillStyle = A.inner; ctx.beginPath(); ctx.ellipse(ex, hy - r * 1.35, r * 0.15, r * 0.6, (sg === '-' ? -0.15 : 0.15), 0, TAU); ctx.fill(); }); }
+  if (A.ear === 'round' || A.ear === 'fluffy'){ var er = A.ear === 'fluffy' ? r * 0.55 : r * 0.38; [-1, 1].forEach(function(sg){ ctx.fillStyle = A.ear === 'fluffy' ? A.head : A.inner; o(function(){ ctx.beginPath(); ctx.arc(sg * r * 0.82, hy - r * 0.6, er, 0, TAU); }); if (A.ear === 'fluffy'){ ctx.fillStyle = A.inner; ctx.beginPath(); ctx.arc(sg * r * 0.82, hy - r * 0.6, er * 0.55, 0, TAU); ctx.fill(); } }); }
+  if (A.ear === 'tri' || A.ear === 'point'){ [-1, 1].forEach(function(sg){ ctx.fillStyle = A.head; o(function(){ ctx.beginPath(); ctx.moveTo(sg * r * 0.35, hy - r * 0.75); ctx.lineTo(sg * r * 0.95, hy - r * 0.55); ctx.lineTo(sg * r * 0.55, hy - r * 1.55); ctx.closePath(); }); ctx.fillStyle = A.inner; ctx.beginPath(); ctx.moveTo(sg * r * 0.48, hy - r * 0.85); ctx.lineTo(sg * r * 0.78, hy - r * 0.72); ctx.lineTo(sg * r * 0.57, hy - r * 1.3); ctx.closePath(); ctx.fill(); }); }
+  if (A.mane){ ctx.fillStyle = A.mane; o(function(){ ctx.beginPath(); ctx.moveTo(-r * 0.9, hy - r * 0.2); ctx.quadraticCurveTo(-r * 0.6, hy - r * 1.5, r * 0.3, hy - r * 1.15); ctx.quadraticCurveTo(r * 0.1, hy - r * 0.6, -r * 0.9, hy - r * 0.2); ctx.closePath(); }); }
+  // head
+  ctx.fillStyle = A.head; o(function(){ ctx.beginPath(); ctx.arc(0, hy, r, 0, TAU); });
+  if (A.ear === 'floppy'){ [-1, 1].forEach(function(sg){ ctx.fillStyle = A.inner; o(function(){ ctx.beginPath(); ctx.ellipse(sg * r * 0.88, hy + r * 0.05, r * 0.28, r * 0.62, sg * 0.25, 0, TAU); }); }); }
+  if (A.patches){ [-1, 1].forEach(function(sg){ ctx.fillStyle = A.dark; ctx.beginPath(); ctx.ellipse(sg * r * 0.42, hy + r * 0.05, r * 0.3, r * 0.36, sg * 0.4, 0, TAU); ctx.fill(); }); }
+  if (A.snout){ ctx.fillStyle = A.inner; o(function(){ ctx.beginPath(); ctx.ellipse(r * 0.35, hy + r * 0.35, r * 0.55, r * 0.42, 0, 0, TAU); }); ctx.fillStyle = A.dark; ctx.beginPath(); ctx.arc(r * 0.5, hy + r * 0.3, r * 0.07, 0, TAU); ctx.arc(r * 0.75, hy + r * 0.3, r * 0.07, 0, TAU); ctx.fill(); }
+  // eyes
+  var eyx = r * 0.42, eyy = hy - r * 0.05, er2 = r * 0.17;
+  ctx.fillStyle = A.patches ? '#fff' : '#2a1a3a';
+  if (A.patches){ ctx.beginPath(); ctx.arc(-eyx, eyy, er2 * 1.1, 0, TAU); ctx.arc(eyx, eyy, er2 * 1.1, 0, TAU); ctx.fill(); ctx.fillStyle = '#2a1a3a'; er2 *= 0.7; }
+  ctx.beginPath(); ctx.arc(-eyx, eyy, er2, 0, TAU); ctx.arc(eyx, eyy, er2, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-eyx + er2 * 0.35, eyy - er2 * 0.35, er2 * 0.42, 0, TAU); ctx.arc(eyx + er2 * 0.35, eyy - er2 * 0.35, er2 * 0.42, 0, TAU); ctx.fill();
+  ctx.fillStyle = 'rgba(255,120,160,0.4)'; ctx.beginPath(); ctx.ellipse(-r * 0.62, hy + r * 0.32, r * 0.18, r * 0.11, 0, 0, TAU); ctx.ellipse(r * 0.62, hy + r * 0.32, r * 0.18, r * 0.11, 0, 0, TAU); ctx.fill();
+  // nose, beak, mouth
+  if (A.beak === 'tri'){ ctx.fillStyle = '#ff9d2e'; o(function(){ ctx.beginPath(); ctx.moveTo(r * 0.05, hy + r * 0.2); ctx.lineTo(r * 0.75, hy + r * 0.38); ctx.lineTo(r * 0.05, hy + r * 0.56); ctx.closePath(); }); }
+  else if (A.beak === 'flat'){ ctx.fillStyle = '#ff9d2e'; o(function(){ ctx.beginPath(); ctx.ellipse(r * 0.5, hy + r * 0.38, r * 0.5, r * 0.2, 0, 0, TAU); }); }
+  else if (A.nose === 'tri'){ ctx.fillStyle = '#ff8fc8'; ctx.beginPath(); ctx.moveTo(-r * 0.12, hy + r * 0.32); ctx.lineTo(r * 0.12, hy + r * 0.32); ctx.lineTo(0, hy + r * 0.48); ctx.closePath(); ctx.fill(); ctx.strokeStyle = '#2a1a3a'; ctx.lineWidth = lw * 0.7; ctx.beginPath(); ctx.moveTo(0, hy + r * 0.48); ctx.lineTo(0, hy + r * 0.6); ctx.moveTo(-r * 0.2, hy + r * 0.7); ctx.quadraticCurveTo(0, hy + r * 0.85, r * 0.2, hy + r * 0.7); ctx.stroke(); }
+  else if (A.nose === 'round'){ ctx.fillStyle = '#2a1a3a'; ctx.beginPath(); ctx.ellipse(0, hy + r * 0.38, r * 0.16, r * 0.12, 0, 0, TAU); ctx.fill(); ctx.strokeStyle = '#2a1a3a'; ctx.lineWidth = lw * 0.7; ctx.beginPath(); ctx.moveTo(-r * 0.22, hy + r * 0.66); ctx.quadraticCurveTo(0, hy + r * 0.82, r * 0.22, hy + r * 0.66); ctx.stroke(); if (A.tongue){ ctx.fillStyle = '#ff6fae'; ctx.beginPath(); ctx.ellipse(r * 0.1, hy + r * 0.82, r * 0.12, r * 0.16, 0, 0, TAU); ctx.fill(); } }
+  else if (A.nose === 'big'){ ctx.fillStyle = '#2b2b2b'; o(function(){ ctx.beginPath(); ctx.ellipse(0, hy + r * 0.38, r * 0.3, r * 0.36, 0, 0, TAU); }); ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.beginPath(); ctx.arc(-r * 0.1, hy + r * 0.26, r * 0.08, 0, TAU); ctx.fill(); }
+  if (A.whiskers){ ctx.strokeStyle = 'rgba(40,20,80,0.55)'; ctx.lineWidth = lw * 0.6; ctx.beginPath(); [-1, 1].forEach(function(sg){ ctx.moveTo(sg * r * 0.3, hy + r * 0.4); ctx.lineTo(sg * r * 1.15, hy + r * 0.25); ctx.moveTo(sg * r * 0.3, hy + r * 0.5); ctx.lineTo(sg * r * 1.15, hy + r * 0.6); }); ctx.stroke(); }
+  ctx.restore();
+}
+function petPortrait(cv, name){ var c2 = cv.getContext('2d'); var saved = ctx; ctx = c2; try { ctx.clearRect(0, 0, cv.width, cv.height); drawPetArt(petName(name), cv.width / 2, cv.height - 8, Math.min(cv.width, cv.height) * 0.82, S.time, 1); } finally { ctx = saved; } }
+
 function drawPet(){
   var pt2 = L.pet, px2, py2;
   if (pt2.state !== 'hidden'){
     if (pt2.state === 'waiting'){ px2 = pt2.x; py2 = GY - 6 - Math.abs(Math.sin(pt2.t * 5)) * 18; }
     else { var k2 = Math.min(1, pt2.t / 1.6), e2 = k2 * (2 - k2), side = pt2.x < P.x + P.w / 2 ? 1 : -1, tx = P.x + P.w / 2 + side * 44; px2 = pt2.x + (tx - pt2.x) * e2; pt2.px = px2; py2 = GY - 6 - Math.abs(Math.sin(pt2.t * (k2 < 1 ? 9 : 5))) * (k2 < 1 ? 18 : 12); }
-    ctx.save();
-    if (pt2.state === 'saved'){ var gl = ctx.createRadialGradient(px2, py2 - 22, 6, px2, py2 - 22, 46); gl.addColorStop(0, 'rgba(255,240,150,0.55)'); gl.addColorStop(1, 'rgba(255,240,150,0)'); ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(px2, py2 - 22, 52, 0, TAU); ctx.fill(); }
-    ctx.font = (pt2.state === 'saved' ? '60px' : '44px') + ' sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ellipse(px2, GY + 2, pt2.state === 'saved' ? 24 : 18, 6);
-    ctx.fillText(pt2.emoji, px2, py2); ctx.restore();
+    var hop = GY - 6 - py2;
+    drawPetArt(pt2.name, px2, GY - hop, pt2.state === 'saved' ? 66 : 50, pt2.t, (pt2.state === 'saved' && pt2.t >= 1.6) ? (P.x + P.w / 2 > px2 ? 1 : -1) : -1);
     if (pt2.state === 'saved' && pt2.t >= 1.6){ var nm = pt2.name.charAt(0).toUpperCase() + pt2.name.slice(1) + '!'; ctx.fillStyle = '#ff5c8a'; heart(px2 + 34, py2 - 62 + Math.sin(pt2.t * 4) * 5, 7); heart(px2 - 34, py2 - 70 + Math.cos(pt2.t * 3.4) * 5, 5); ctx.font = '700 22px ' + FONT; ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(40,20,80,0.9)'; ctx.lineWidth = 5; ctx.strokeText(nm, px2, py2 - 80); ctx.fillText(nm, px2, py2 - 80); }
     if (pt2.state === 'waiting'){ ctx.fillStyle = '#ff5c8a'; heart(px2 + 26, py2 - 44 + Math.sin(pt2.t * 4) * 4, 6); ctx.font = '700 16px ' + FONT; ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(40,20,80,0.9)'; ctx.lineWidth = 4; ctx.strokeText('Help!', px2, py2 - 56); ctx.fillText('Help!', px2, py2 - 56); }
   }
@@ -2240,7 +2297,8 @@ function refreshTitle(){
   checkDelayedReset();
   $('titleName').textContent = 'MyRush';
   $('titleLine').textContent = 'The Grumpy King took all the candies from the castle! Help ' + playerTitle() + ' run across the rooftops, the maidan and the towers, dodge the professor, and bring them back.';
-  $('petLine').textContent = profile && profile.pets && profile.pets.length ? 'Friends rescued: ' + profile.pets.join(' ') : '';
+  var pl = $('petLine'); pl.innerHTML = '';
+  if (profile && profile.pets && profile.pets.length){ pl.appendChild(document.createTextNode('Friends rescued: ')); profile.pets.forEach(function(pe){ var cv = document.createElement('canvas'); cv.width = 44; cv.height = 40; cv.className = 'petmini'; pl.appendChild(cv); petPortrait(cv, pe); }); }
   $('treasure').textContent = (total.coins || total.candies) ? ('Treasure chest: ' + total.coins + ' coins and ' + total.candies + ' candies') : 'Your treasure chest is waiting to be filled!';
   var t = '';
   if (lock.daily >= 0){
@@ -2665,7 +2723,7 @@ requestAnimationFrame(frame);
 if (window.speechSynthesis && speechSynthesis.getVoices) speechSynthesis.getVoices();
 
 window.__PPC = { S: S, P: P, step: function(dt, n){ for (var i = 0; i < (n || 1); i++) update(dt || 1 / 60); draw(); }, keys: keys,
-  get L(){ return L; }, get monsters(){ return monsters; }, get pickups(){ return pickups; }, get bolts(){ return bolts; }, get camX(){ return camX; }, get stats(){ return stats; }, get lock(){ return lock; }, get zoomT(){ return zoomT; }, codeFor: codeFor, grant: grant, lockGame: lockGame, openApprove: openApprove, apDigit: apDigit, canPlay: canPlay, get quiz(){ return quiz; },
+  get L(){ return L; }, get monsters(){ return monsters; }, get pickups(){ return pickups; }, get bolts(){ return bolts; }, get camX(){ return camX; }, get stats(){ return stats; }, get lock(){ return lock; }, drawPetArt: drawPetArt, petPortrait: petPortrait, PETS: PETS, get zoomT(){ return zoomT; }, codeFor: codeFor, grant: grant, lockGame: lockGame, openApprove: openApprove, apDigit: apDigit, canPlay: canPlay, get quiz(){ return quiz; },
   get profile(){ return profile; }, set profile(v){ profile = v; saveProfile(); },
   startLevel: startLevel, startWin: startWin, spawnBolt: spawnBolt, collect: collect, openParent: openParent, showSettingsArea: showSettingsArea, openQuiz: openQuiz, answerQuiz: answerQuiz, closeQuiz: closeQuiz, makeQuestion: makeQuestion, tierForAge: tierForAge, TIERS: TIERS, karate: karate, refreshTitle: refreshTitle, outOfHearts: outOfHearts, hurtPrincess: hurtPrincess, revive: revive, set touch(v){ touch = v; }, portrait: function(c2, o){ var saved = ctx; ctx = c2; try { drawCharacter(o); } finally { ctx = saved; } }, makeMonster: makeMonster, drawMonsterTo: function(c2, m){ var saved = ctx; ctx = c2; try { drawMonster(m); } finally { ctx = saved; } } };
 })();
