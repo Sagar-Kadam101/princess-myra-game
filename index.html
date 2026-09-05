@@ -91,6 +91,13 @@
   .big-btn.alt { background:linear-gradient(#ff9fd0,#ff6fae); border-bottom-color:#c94a86; color:#fff; font-size:clamp(14px,2.6vw,19px); padding:6px 16px; margin-top:8px; }
   .altrow { gap:8px; flex-wrap:wrap; }
   .players { gap:8px; flex-wrap:wrap; margin:4px 0; }
+  .plist { text-align:left; background:rgba(0,0,0,0.25); border-radius:14px; padding:6px 12px; margin:4px 0 8px; font-size:clamp(13px,2.3vw,16px); }
+  .prow { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.12); }
+  .prow.cur span:first-child { color:#ffd23f; font-weight:700; }
+  .prow button, .plist > button { pointer-events:auto; font-family:inherit; font-size:14px; font-weight:700; color:#fff; background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.35); border-radius:10px; height:32px; padding:0 10px; cursor:pointer; margin:2px; }
+  .prow button.warn { border-color:#ff8fc8; }
+  .guide { text-align:left; font-size:clamp(12px,2.1vw,15px); line-height:1.4; background:rgba(0,0,0,0.25); border-radius:14px; padding:10px 14px; margin:6px 0; }
+  .guide b { color:#ffd23f; }
   .players button { height:36px; font-size:15px; padding:0 14px; }
   .quiz-q .w { transition:color 0.1s, text-shadow 0.1s; }
   .quiz-q .w.said { color:#fff; text-shadow:0 0 10px #ffd23f; }
@@ -293,6 +300,15 @@
       <p class="small">Then type the 6-digit approval code they give you:</p>
       <div class="pin-dots" id="apPhoneDots"></div>
       <div class="pad" id="apPhonePad"></div>
+      <div><button class="link-btn" id="apPairHelpBtn">How does this work?</button></div>
+      <div id="apPairHelp" hidden><div class="guide">
+          <b>1. On this device (the child's):</b> a grown-up opens Settings, Grown-ups, turns on "Parent's phone" and notes the 8-digit pairing code.<br>
+          <b>2. On your own phone:</b> install MyRush from the same link, open it, tap Settings, then Grown-ups, then "Parent Key: I am on the grown-up's phone". Type the pairing code once. It stays saved.<br>
+          <b>3. Every day:</b> when the child's free time is over, the child taps "Grown-up: give more time" and "Code from phone". A 4-digit request code appears. The child reads it to you.<br>
+          <b>4. On your phone:</b> open Parent Key, type the request code, tap the minutes you allow. A 6-digit approval code appears.<br>
+          <b>5. The child types the approval code</b> on this device and plays for that many minutes.<br>
+          Works without internet. Each code works once. "New pairing code" here breaks the old pairing, so type the new one into your phone again.
+        </div></div>
     </div>
     <div id="apTime" hidden>
       <p class="small">How long may the child play now?</p>
@@ -334,7 +350,15 @@
       <div id="phoneSetup" hidden>
         <p class="small">On your own phone, open MyRush, go to Settings, Grown-ups, then "Parent Key", and type this pairing code once. Keep it away from the children.</p>
         <div class="code" id="pairCode"></div>
-        <div class="row"><button id="newPair">New pairing code</button></div>
+        <div class="row"><button id="newPair">New pairing code</button><button id="pairHelpBtn">How to pair, step by step</button></div>
+        <div id="pairHelp" hidden><div class="guide">
+          <b>1. On this device (the child's):</b> you are here. Tap "Parent's phone" above and note the 8-digit pairing code.<br>
+          <b>2. On your own phone:</b> install MyRush from the same link, open it, tap Settings, then Grown-ups, then "Parent Key: I am on the grown-up's phone". Type the pairing code once. It stays saved.<br>
+          <b>3. Every day:</b> when the child's free time is over, the child taps "Grown-up: give more time" and "Code from phone". A 4-digit request code appears. The child reads it to you.<br>
+          <b>4. On your phone:</b> open Parent Key, type the request code, tap the minutes you allow. A 6-digit approval code appears.<br>
+          <b>5. The child types the approval code</b> on this device and plays for that many minutes.<br>
+          Works without internet. Each code works once. "New pairing code" here breaks the old pairing, so type the new one into your phone again.
+        </div></div>
       </div>
       <p class="small">Give extra time now:</p>
       <div class="row" id="grantRow"><button data-min="10">10 min</button><button data-min="20">20 min</button><button data-min="30">30 min</button><button data-min="45">45 min</button><button data-min="60">60 min</button></div>
@@ -345,7 +369,9 @@
       <p class="small">Monsters:</p>
       <div class="row" id="diffRow"><button data-diff="gentle">Gentle</button><button data-diff="normal">Normal</button><button data-diff="brave">Brave</button></div>
       <p class="small" id="diffNote"></p>
-      <div class="row"><button id="editChild">Change the child</button><button id="parentKeyBtn">Parent Key</button><button id="resetProgress" class="warn">Reset progress</button><button id="removePlayer" class="warn" hidden>Remove this player</button></div>
+      <p class="small">Players on this device:</p>
+      <div id="playerList" class="plist"></div>
+      <div class="row"><button id="editChild">Change the child</button><button id="parentKeyBtn">Parent Key</button><button id="resetProgress" class="warn">Reset progress</button></div>
       <p class="small" id="resetNote" hidden>Tap once more to confirm. Coins, candies, rescued friends, shop items and this report will be cleared.</p>
     </div>
     <div id="parentKey" hidden>
@@ -800,6 +826,7 @@ var STICKERS = [
   { id: 'coins-100', name: 'Coin collector', how: 'Collect 100 coins in all', kind: 'coin' },
   { id: 'candies-50', name: 'Sweet tooth', how: 'Collect 50 candies in all', kind: 'candy' },
   { id: 'kicks-10', name: 'Karate kid', how: 'Land ten flying kicks', kind: 'kick' },
+  { id: 'all-pets', name: 'Friend to all', how: 'Rescue all eight friends', kind: 'star', n: 8 },
   { id: 'pet-kitten', name: 'Kitten friend', how: 'Rescue the kitten', kind: 'pet', pet: 'kitten' },
   { id: 'pet-puppy', name: 'Puppy friend', how: 'Rescue the puppy', kind: 'pet', pet: 'puppy' },
   { id: 'pet-bunny', name: 'Bunny friend', how: 'Rescue the bunny', kind: 'pet', pet: 'bunny' },
@@ -987,7 +1014,7 @@ function genLevel(lv){
   coinArc(x + 110, GY - 140, 6, 40);
   Lv.goalX = x + fLen; Lv.length = x + fLen + 320;
   Lv.castleGate = { x: Lv.goalX + 10, y: 0, w: 16, h: GY, kind: 'gate', open: false, asked: true, castle: true }; Lv.solids.push(Lv.castleGate);
-  var petInfo = PETS[(lv - 1) % PETS.length]; Lv.pet = { x: Lv.goalX + 130, y: GY, emoji: petInfo[1], name: petInfo[0], state: 'hidden', t: 0 };
+  var petInfo = PETS[(lv - 1) % PETS.length]; Lv.pet = { x: Lv.goalX + 130, y: GY, emoji: petInfo[1], name: petInfo[0], state: 'hidden', t: 0, known: !!(profile && profile.pets && profile.pets.indexOf(petInfo[1]) >= 0) };
 
   for (i = 0; i < Lv.length / 22; i++){ var tx2 = i * 22 + rnd(0, 18); if (surfaceAt(Lv, tx2) === GY) Lv.tufts.push({ x: tx2, y: GY }); }
   for (i = 0; i < Lv.length / 140; i++){ var dx2 = i * 140 + rnd(10, 120); if (surfaceAt(Lv, dx2) === GY) Lv.decor.push({ x: dx2, y: GY, k: i % 3 === 0 ? 'mushroom' : 'flower', c: ['#ff8fc8', '#ffd166', '#9be7ff', '#c3f584'][i % 4], s: rnd(0.8, 1.2) }); }
@@ -1460,7 +1487,7 @@ function updateWin(dt){
   winT += dt; nextBolt -= dt;
   var th = theme();
   if (L.pet) L.pet.t += dt;
-  if (L.pet && L.pet.state === 'saved' && L.pet.t > 1.6 && L.pet.t - dt <= 1.6){ banner('You rescued a ' + L.pet.name + '!'); sfx.starPower(); S.rescueT = 0; for (var h = 0; h < 16; h++) parts.push({ x: P.x + P.w / 2 + rnd(-40, 40), y: P.y + rnd(-20, 40), vx: rnd(-50, 50), vy: rnd(-140, -50), life: 1.8, max: 1.8, color: '#ff5c8a', size: rnd(4, 8), kind: 'heart' }); }
+  if (L.pet && L.pet.state === 'saved' && L.pet.t > 1.6 && L.pet.t - dt <= 1.6){ banner(L.pet.known ? 'Your friend the ' + L.pet.name + ' is here!' : 'You rescued a ' + L.pet.name + '!'); sfx.starPower(); S.rescueT = 0; for (var h = 0; h < 16; h++) parts.push({ x: P.x + P.w / 2 + rnd(-40, 40), y: P.y + rnd(-20, 40), vx: rnd(-50, 50), vy: rnd(-140, -50), life: 1.8, max: 1.8, color: '#ff5c8a', size: rnd(4, 8), kind: 'heart' }); }
   if (S.photo){ P.dance = false; P.facing = 1; P.vx = 0; physics(P, dt, GRAV); return; }
   if (winT > 2.0){
     P.dance = true;
@@ -1475,9 +1502,9 @@ function updateWin(dt){
   if (winT > 5.6 && !winShown){
     winShown = true;
     $('winLine').textContent = playerName() + ' made it home to the castle!';
-    var pet = PETS[(S.level - 1) % PETS.length]; if (profile && profile.pets.indexOf(pet[1]) < 0){ profile.pets.push(pet[1]); saveProfile(); } award('pet-' + pet[0]);
+    var pet = PETS[(S.level - 1) % PETS.length], wasKnown = !!(L.pet && L.pet.known); if (profile && profile.pets.indexOf(pet[1]) < 0){ profile.pets.push(pet[1]); saveProfile(); } award('pet-' + pet[0]); if (profile && profile.pets.length >= PETS.length) award('all-pets');
     var ns = $('winStickers'); ns.innerHTML = ''; if (S.newStickers.length){ ns.appendChild(document.createTextNode('New stickers: ')); S.newStickers.forEach(function(id){ var cv = document.createElement('canvas'); cv.width = 64; cv.height = 64; cv.className = 'stkmini'; ns.appendChild(cv); drawStickerTo(cv, id); }); }
-    $('winPet').innerHTML = '<canvas class="petcv" width="150" height="120"></canvas><br>A ' + pet[0] + ' was hiding in the castle. It is your friend now!'; petPortrait($('winPet').querySelector('canvas'), pet[0]);
+    $('winPet').innerHTML = '<canvas class="petcv" width="150" height="120"></canvas><br>' + (wasKnown ? 'Your friend the ' + pet[0] + ' came to cheer for you!' : 'A ' + pet[0] + ' was hiding in the castle. It is your friend now!'); petPortrait($('winPet').querySelector('canvas'), pet[0]);
     $('winQ').textContent = S.levelQuestions ? 'Questions answered: ' + S.levelQuestions : '';
     sayP('win');
     $('winCoins').textContent = S.levelCoins;
@@ -2648,7 +2675,7 @@ function showSettingsArea(){
   $('qNote').textContent = settings.qmode === 'off' ? 'The professor stays home. No questions in the levels.' : settings.qmode === 'easier' ? 'Questions from one age group younger.' : settings.qmode === 'harder' ? 'Questions from one age group older.' : 'Questions are picked from the birthday: ' + ['3 to 4', '5 to 6', '7 to 8', '9 and up'][tierForAge(playerAge())] + ' years.';
   $('diffNote').textContent = settings.diff === 'gentle' ? 'Only the Grumpy King and the red grumpies can hurt. Monsters are slower and the King is weaker.' : settings.diff === 'brave' ? 'Faster monsters and a tougher Grumpy King.' : 'Spiky monsters, cyclopses and diving birds also hurt from level 2.';
   $('resetNote').hidden = !resetArmed;
-  $('removePlayer').hidden = profiles.length < 2; $('removePlayer').textContent = 'Remove this player'; removeArmed = false;
+  removeArmedIdx = -1; renderPlayers();
   $('parentWho').textContent = profile ? 'Report for ' + (profile.name || 'the child') + (profiles.length > 1 ? '. Switch players on the start screen to see another child.' : '') : '';
   $('resetProgress').textContent = resetArmed ? 'Yes, reset everything' : 'Reset progress';
 }
@@ -2685,8 +2712,21 @@ $('lockNowBtn').addEventListener('click', function(){ lock.until = 0; lock.playe
 $('qRow').addEventListener('click', function(e){ var v = e.target.getAttribute('data-q'); if (v){ settings.qmode = v; saveSettings(); showSettingsArea(); } });
 $('diffRow').addEventListener('click', function(e){ var v = e.target.getAttribute('data-diff'); if (v){ settings.diff = v; saveSettings(); showSettingsArea(); } });
 $('editChild').addEventListener('click', function(){ hide('parent'); pausedFrom = null; if (S.state === 'paused') S.state = 'title'; openSetup(false); });
-var removeArmed = false;
-$('removePlayer').addEventListener('click', function(){ if (profiles.length < 2) return; if (!removeArmed){ removeArmed = true; $('removePlayer').textContent = 'Yes, remove ' + (profile.name || 'this player'); return; } removeArmed = false; removeProfile(curIdx); showSettingsArea(); });
+var removeArmedIdx = -1;
+function renderPlayers(){
+  var box = $('playerList'); box.innerHTML = '';
+  profiles.forEach(function(p, i){
+    var row = document.createElement('div'); row.className = 'prow' + (i === curIdx ? ' cur' : '');
+    var nm = document.createElement('span'); nm.textContent = (p.name || 'Player ' + (i + 1)) + (i === curIdx ? ' (playing now)' : ''); row.appendChild(nm);
+    var acts = document.createElement('span'); acts.className = 'pacts';
+    var e = document.createElement('button'); e.textContent = 'Edit'; e.addEventListener('click', function(){ switchProfile(i); hide('parent'); pausedFrom = null; if (S.state === 'paused') S.state = 'title'; openSetup(false); }); acts.appendChild(e);
+    if (profiles.length > 1){ var r = document.createElement('button'); r.className = 'warn'; r.textContent = removeArmedIdx === i ? 'Yes, remove' : 'Remove'; r.addEventListener('click', function(){ if (removeArmedIdx !== i){ removeArmedIdx = i; renderPlayers(); return; } removeArmedIdx = -1; removeProfile(i); showSettingsArea(); }); acts.appendChild(r); }
+    row.appendChild(acts); box.appendChild(row);
+  });
+  var add = document.createElement('button'); add.textContent = 'Add a player'; add.disabled = profiles.length >= 6; add.addEventListener('click', function(){ hide('parent'); pausedFrom = null; if (S.state === 'paused') S.state = 'title'; openSetup(true); }); box.appendChild(add);
+}
+$('pairHelpBtn').addEventListener('click', function(){ $('pairHelp').hidden = !$('pairHelp').hidden; });
+$('apPairHelpBtn').addEventListener('click', function(){ $('apPairHelp').hidden = !$('apPairHelp').hidden; });
 $('resetProgress').addEventListener('click', function(){
   if (!resetArmed){ resetArmed = true; showSettingsArea(); return; }
   resetArmed = false;
@@ -2766,7 +2806,7 @@ function renderLook(){
   drawPreview();
 }
 function turntable(cv, look){
-  var w = cv.width, h = cv.height, ang = S.time * 0.45, cs = Math.cos(ang), fx = Math.max(0.14, Math.abs(cs));
+  var w = cv.width, h = cv.height, cs = 1, fx = 1;
   ctx.clearRect(0, 0, w, h);
   var g2 = ctx.createRadialGradient(w / 2, h - 14, 4, w / 2, h - 14, w * 0.36); g2.addColorStop(0, 'rgba(255,224,150,0.55)'); g2.addColorStop(1, 'rgba(255,224,150,0)'); ctx.fillStyle = g2; ctx.beginPath(); ctx.ellipse(w / 2, h - 14, w * 0.36, w * 0.11, 0, 0, TAU); ctx.fill();
   ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.beginPath(); ctx.ellipse(w / 2, h - 12, w * 0.26, w * 0.07, 0, 0, TAU); ctx.fill();
