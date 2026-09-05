@@ -36,12 +36,19 @@ jobs:
           mkdir -p android/app/src/main/assets
           cp index.html android/app/src/main/assets/index.html
 
-      - name: Build the APK
+      - name: Unpack the signing key
+        run: echo "${{ secrets.MYRUSH_KEYSTORE_B64 }}" | base64 -d > "$RUNNER_TEMP/myrush.p12"
+
+      - name: Build the signed APK
         working-directory: android
-        run: gradle assembleDebug --no-daemon --stacktrace
+        env:
+          MYRUSH_KEYSTORE: ${{ runner.temp }}/myrush.p12
+          MYRUSH_KEYSTORE_PASS: ${{ secrets.MYRUSH_KEYSTORE_PASS }}
+          APP_VERSION_CODE: ${{ github.run_number }}
+        run: gradle assembleRelease --no-daemon --stacktrace
 
       - name: Name the APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk MyRush.apk
+        run: cp android/app/build/outputs/apk/release/app-release.apk MyRush.apk
 
       - name: Keep the APK with this run
         uses: actions/upload-artifact@v4
@@ -57,4 +64,6 @@ jobs:
           body: |
             Download MyRush.apk on the Android phone or tablet and open it to install.
             Android will ask you to allow installing from this source the first time.
+            Installing a newer build over an older one keeps all progress. If you still have
+            build 21 or older, uninstall it once before installing this build.
           files: MyRush.apk

@@ -10,8 +10,21 @@ android {
         applicationId "com.smk.princessmyra"
         minSdk 26
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode (System.getenv("APP_VERSION_CODE") ?: "1").toInteger()
+        versionName "1." + (System.getenv("APP_VERSION_CODE") ?: "0")
+    }
+
+    signingConfigs {
+        release {
+            def ksPath = System.getenv("MYRUSH_KEYSTORE")
+            if (ksPath != null && new File(ksPath).exists()) {
+                storeFile file(ksPath)
+                storePassword System.getenv("MYRUSH_KEYSTORE_PASS")
+                keyAlias "myrush"
+                keyPassword System.getenv("MYRUSH_KEYSTORE_PASS")
+                storeType "PKCS12"
+            }
+        }
     }
 
     buildTypes {
@@ -20,6 +33,7 @@ android {
         }
         release {
             minifyEnabled false
+            signingConfig signingConfigs.release
         }
     }
 
