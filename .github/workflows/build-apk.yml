@@ -69,5 +69,7 @@ jobs:
             3. If Google Play Protect says "Unknown app", tap **More details**, then **Install anyway**. You can let it scan the app.
             4. Open MYRA. It works fully offline and sends nothing anywhere.
 
-            Installing a newer build over an older one keeps all progress. If you still have build 21 or older, uninstall it once before installing this build.
+            Direct download of the newest version, for sharing: https://github.com/Sagar-Kadam101/princess-myra-game/releases/latest/download/MYRA.apk
+
+            MYRA installs as its own app. If an older "Princess Myra" or "MyRush" app is on the phone it stays separate and can be uninstalled. From build 35 on, newer builds install over older ones and keep all progress.
           files: MYRA.apk

@@ -7,7 +7,7 @@ android {
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.smk.princessmyra"
+        applicationId "com.smk.myra"
         minSdk 26
         targetSdk 34
         versionCode = Integer.parseInt(System.getenv("APP_VERSION_CODE") ?: "1")

@@ -17,6 +17,9 @@ Edit `index.html` and push. The Android app is only a full-screen wrapper around
 
 ## Installing on Android
 
+Direct link to the newest APK: https://github.com/Sagar-Kadam101/princess-myra-game/releases/latest/download/MYRA.apk
+
+
 1. Download MYRA.apk from the latest release. If Chrome warns that the file might be harmful, tap the arrow or "More" and choose **Download anyway**. Chrome shows this for every app outside the Play Store.
 2. Open the file. If asked, allow installs from this source in Settings and go back.
 3. If Google Play Protect says "Unknown app", tap **More details**, then **Install anyway**.
