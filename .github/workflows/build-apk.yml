@@ -62,8 +62,12 @@ jobs:
           tag_name: build-${{ github.run_number }}
           name: MyRush build ${{ github.run_number }}
           body: |
-            Download MyRush.apk on the Android phone or tablet and open it to install.
-            Android will ask you to allow installing from this source the first time.
-            Installing a newer build over an older one keeps all progress. If you still have
-            build 21 or older, uninstall it once before installing this build.
+            **How to install MyRush on an Android phone or tablet**
+
+            1. Tap MyRush.apk below. If Chrome warns "This file might be harmful", tap the arrow or "More" next to the warning and choose **Download anyway**. Chrome says this for every app that does not come from the Play Store.
+            2. Open the downloaded file. If Android says installs from this source are not allowed, tap **Settings**, switch on **Allow from this source**, and go back.
+            3. If Google Play Protect says "Unknown app", tap **More details**, then **Install anyway**. You can let it scan the app.
+            4. Open MyRush. It works fully offline and sends nothing anywhere.
+
+            Installing a newer build over an older one keeps all progress. If you still have build 21 or older, uninstall it once before installing this build.
           files: MyRush.apk

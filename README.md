@@ -13,3 +13,11 @@ Every push to `main` builds a new APK automatically (see the Actions tab) and ad
 ## Change the game
 
 Edit `index.html` and push. The Android app is only a full-screen wrapper around that file.
+
+
+## Installing on Android
+
+1. Download MyRush.apk from the latest release. If Chrome warns that the file might be harmful, tap the arrow or "More" and choose **Download anyway**. Chrome shows this for every app outside the Play Store.
+2. Open the file. If asked, allow installs from this source in Settings and go back.
+3. If Google Play Protect says "Unknown app", tap **More details**, then **Install anyway**.
+4. Newer builds install over older ones and keep all progress.
