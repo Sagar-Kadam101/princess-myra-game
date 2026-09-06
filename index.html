@@ -91,6 +91,8 @@
   .big-btn.alt { background:linear-gradient(#ff9fd0,#ff6fae); border-bottom-color:#c94a86; color:#fff; font-size:clamp(14px,2.6vw,19px); padding:6px 16px; margin-top:8px; }
   .altrow { gap:8px; flex-wrap:wrap; }
   .players { gap:8px; flex-wrap:wrap; margin:4px 0; }
+  .setupnav { text-align:right; margin:-6px 0 2px; }
+  .row .big-btn { margin-top:0; }
   .plist { text-align:left; background:rgba(0,0,0,0.25); border-radius:14px; padding:6px 12px; margin:4px 0 8px; font-size:clamp(13px,2.3vw,16px); }
   .prow { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.12); }
   .prow.cur span:first-child { color:#ffd23f; font-weight:700; }
@@ -177,6 +179,7 @@
 
 <div id="setup" class="overlay solid" hidden>
   <div class="panel">
+    <div class="setupnav"><button class="link-btn" id="setupCancel" hidden>Cancel, keep everything as it was</button></div>
     <div id="setupStep1">
       <h2>Who are you?</h2>
       <div class="row"><button class="big" data-gender="princess"><span>&#128120;</span>Princess</button><button class="big" data-gender="prince"><span>&#129332;</span>Prince</button></div>
@@ -185,7 +188,7 @@
       <h2>What is your name?</h2>
       <p><input type="text" id="nameInput" maxlength="14" placeholder="Type the name" autocomplete="off"></p>
       <p class="small" id="nameHint" hidden></p>
-      <button class="big-btn" id="nameNext">Next</button>
+      <div class="row"><button id="setupBack2">Back</button><button class="big-btn" id="nameNext">Next</button></div>
     </div>
     <div id="setupStep3" hidden>
       <h2>Pick your look</h2>
@@ -193,13 +196,13 @@
       <p class="small">Skin</p><div class="swatches" id="skinSw"></div>
       <p class="small">Hair colour</p><div class="swatches" id="hairSw"></div>
       <p class="small">Hair style</p><div class="row" id="styleRow"></div>
-      <button class="big-btn" id="lookNext">Next</button>
+      <div class="row"><button id="setupBack3">Back</button><button class="big-btn" id="lookNext">Next</button></div>
     </div>
     <div id="setupStep4" hidden>
       <h2>When is the birthday?</h2>
       <p class="small">The questions in the game are chosen to match the age.</p>
       <p><input type="date" id="dobInput"></p>
-      <button class="big-btn" id="dobDone">Done</button>
+      <div class="row"><button id="setupBack4">Back</button><button class="big-btn" id="dobDone">Done</button></div>
     </div>
   </div>
 </div>
@@ -246,6 +249,8 @@
     <div class="setting"><span>Language</span><div class="row" id="langRow"><button data-lang="en">English</button><button data-lang="hi">हिंदी</button><button data-lang="mr">मराठी</button></div></div>
     <p class="small" id="langNote"></p>
     <div class="setting"><span>Character</span><div class="row"><button id="changeChar">Change</button></div></div>
+    <div class="setting"><span>Fun rooms</span><div class="row"><button id="setDress">Dress-up Room</button><button id="setStickers">Sticker Book</button><button id="setCorner">Pet Corner</button></div></div>
+    <p class="small" id="roomsNote" hidden>Finish or leave the level to open these. They are also on the start screen.</p>
     <div class="setting"><span>Players</span><div class="row"><button id="addPlayer">Add a player</button><button id="managePlayers">Edit or remove</button></div></div>
     <div class="setting"><span>Grown-ups</span><div class="row"><button id="grownupsBtn3">Open</button></div></div>
     <div class="row"><button id="howBtn">How to play</button></div>
@@ -270,7 +275,7 @@
     <h1>Out of hearts!</h1>
     <p id="reviveMsg"></p>
     <div class="row"><button id="reviveCoins" class="big"><span>&#128176;</span>Spend 25 coins</button><button id="reviveQuiz" class="big"><span>&#10067;</span>Answer a question</button></div>
-    <div><button class="link-btn" id="reviveRestart">Start the level again</button></div>
+    <div><button class="link-btn" id="reviveRestart">Start the level again</button><button class="link-btn" id="reviveHome">Back to the start screen</button></div>
   </div>
 </div>
 
@@ -286,6 +291,7 @@
     </div>
     <p class="small" id="winStickers"></p>
     <div class="row"><button class="big-btn" id="nextBtn">Next Level</button><button class="big-btn alt" id="photoBtn">Say cheese!</button></div>
+    <div><button class="link-btn" id="winHome">Back to the start screen</button></div>
   </div>
 </div>
 
@@ -421,6 +427,7 @@
     <p id="loseLine">Myra needs a little rest.</p>
     <p class="small">You keep all your coins and candies. Try the level again!</p>
     <button class="big-btn" id="retryBtn">Try Again</button>
+    <div><button class="link-btn" id="loseHome">Back to the start screen</button></div>
   </div>
 </div>
 
@@ -904,6 +911,7 @@ var POWER_NAMES = { axe: 'Axe Power!', bag: 'Super Power Bag!', bat: 'Bat Power!
 var POWER_TIME = { axe: 12, bag: 12, bat: 12, ball: 12, wand: 12, star: 10 };
 var POWER_SETS = [['bat', 'ball'], ['axe', 'wand'], ['bag', 'bat'], ['wand', 'ball']];
 function randPower(){ return pick(POWER_SETS[(S.level - 1) % POWER_SETS.length]); }
+var RESCUE_EVERY = 10;
 var PETS = [['kitten', '\uD83D\uDC31'], ['puppy', '\uD83D\uDC36'], ['bunny', '\uD83D\uDC30'], ['chick', '\uD83D\uDC25'], ['panda', '\uD83D\uDC3C'], ['pony', '\uD83D\uDC34'], ['duckling', '\uD83E\uDD86'], ['koala', '\uD83D\uDC28']];
 var CROWNS = [{ name: 'Gold crown', price: 0 }, { name: 'Silver crown', price: 40 }, { name: 'Flower crown', price: 60 }, { name: 'Ruby crown', price: 90 }];
 
@@ -1042,7 +1050,10 @@ function genLevel(lv){
   coinArc(x + 110, GY - 140, 6, 40);
   Lv.goalX = x + fLen; Lv.length = x + fLen + 320;
   Lv.castleGate = { x: Lv.goalX + 10, y: 0, w: 16, h: GY, kind: 'gate', open: false, asked: true, castle: true }; Lv.solids.push(Lv.castleGate);
-  var petInfo = PETS[(lv - 1) % PETS.length]; Lv.pet = { x: Lv.goalX + 130, y: GY, emoji: petInfo[1], name: petInfo[0], state: 'hidden', t: 0, known: !!(profile && profile.pets && profile.pets.indexOf(petInfo[1]) >= 0) };
+  var knownPets = (profile && profile.pets) ? profile.pets : [], petInfo = null, petKnown = false;
+  if (lv % RESCUE_EVERY === 0){ petInfo = PETS[(Math.floor(lv / RESCUE_EVERY) - 1) % PETS.length]; petKnown = knownPets.indexOf(petInfo[1]) >= 0; }
+  else if (knownPets.length){ var pe = knownPets[lv % knownPets.length]; for (var pi2 = 0; pi2 < PETS.length; pi2++) if (PETS[pi2][1] === pe) petInfo = PETS[pi2]; petKnown = true; }
+  Lv.pet = petInfo ? { x: Lv.goalX + 130, y: GY, emoji: petInfo[1], name: petInfo[0], state: 'hidden', t: 0, known: petKnown } : null;
 
   for (i = 0; i < Lv.length / 22; i++){ var tx2 = i * 22 + rnd(0, 18); if (surfaceAt(Lv, tx2) === GY) Lv.tufts.push({ x: tx2, y: GY }); }
   for (i = 0; i < Lv.length / 140; i++){ var dx2 = i * 140 + rnd(10, 120); if (surfaceAt(Lv, dx2) === GY) Lv.decor.push({ x: dx2, y: GY, k: i % 3 === 0 ? 'mushroom' : 'flower', c: ['#ff8fc8', '#ffd166', '#9be7ff', '#c3f584'][i % 4], s: rnd(0.8, 1.2) }); }
@@ -1531,11 +1542,13 @@ function updateWin(dt){
   if (winT > 5.6 && !winShown){
     winShown = true;
     $('winLine').textContent = playerName() + ' made it home to the castle!';
-    var pet = PETS[(S.level - 1) % PETS.length], wasKnown = !!(L.pet && L.pet.known); if (profile && profile.pets.indexOf(pet[1]) < 0){ profile.pets.push(pet[1]); saveProfile(); } award('pet-' + pet[0]); if (profile && profile.pets.length >= PETS.length) award('all-pets');
+    var pet = L.pet ? [L.pet.name, L.pet.emoji] : null, wasKnown = !!(L.pet && L.pet.known); if (pet){ if (profile && profile.pets.indexOf(pet[1]) < 0){ profile.pets.push(pet[1]); saveProfile(); } award('pet-' + pet[0]); if (profile && profile.pets.length >= PETS.length) award('all-pets'); }
     var ns = $('winStickers'); ns.innerHTML = ''; if (S.newStickers.length){ ns.appendChild(document.createTextNode('New stickers: ')); S.newStickers.forEach(function(id){ var cv = document.createElement('canvas'); cv.width = 64; cv.height = 64; cv.className = 'stkmini'; ns.appendChild(cv); drawStickerTo(cv, id); }); }
-    $('winPet').innerHTML = '<canvas class="petcv" width="150" height="120"></canvas><br>' + (wasKnown ? 'Your friend the ' + pet[0] + ' came to cheer for you!' : 'A ' + pet[0] + ' was hiding in the castle. It is your friend now!'); petPortrait($('winPet').querySelector('canvas'), pet[0]);
+    var nextRescue = Math.ceil((S.level + 1) / RESCUE_EVERY) * RESCUE_EVERY;
+    if (pet){ $('winPet').innerHTML = '<canvas class="petcv" width="150" height="120"></canvas><br>' + (wasKnown ? 'Your friend the ' + pet[0] + ' came to cheer for you!' : 'A ' + pet[0] + ' was hiding in the castle. It is your friend now!'); petPortrait($('winPet').querySelector('canvas'), pet[0]); }
+    else { $('winPet').innerHTML = 'Level ' + S.level + ' done! A new friend is waiting to be rescued at level ' + nextRescue + '.'; }
     $('winQ').textContent = S.levelQuestions ? 'Questions answered: ' + S.levelQuestions : '';
-    sayP('win');
+    if (pet && !wasKnown) sayP('win'); else sayP('praise');
     $('winCoins').textContent = S.levelCoins;
     $('winCandies').textContent = S.levelCandies;
     show('win');
@@ -2875,6 +2888,7 @@ function renderSettings(){
   else if (settings.lang !== 'en' && window.speechSynthesis){ var lv = voiceFor(settings.lang); if (!lv) note = 'No ' + (settings.lang === 'hi' ? 'Hindi' : 'Marathi') + ' voice is installed on this device, so questions are shown in ' + (settings.lang === 'hi' ? 'Hindi' : 'Marathi') + ' but read aloud in English. On Android, open Settings, then Google Text-to-speech, and install the ' + (settings.lang === 'hi' ? 'Hindi' : 'Marathi') + ' voice.'; else note = 'Voice: ' + lv.name; }
   else if (window.speechSynthesis){ var ev = voiceFor('en'); if (ev) note = 'Voice: ' + ev.name + (/en[-_]IN/i.test(ev.lang) ? ' (Indian English)' : ''); }
   $('langNote').textContent = note;
+  var inGame = pausedFrom === 'play'; ['setDress', 'setStickers', 'setCorner'].forEach(function(id){ $(id).disabled = inGame; }); $('roomsNote').hidden = !inGame;
 }
 function setOpt(key, val){ settings[key] = val; saveSettings(); renderSettings(); if (key === 'sound' && val) sfx.coin(); }
 $('musicRow').addEventListener('click', function(e){ var tn = e.target.getAttribute('data-tune'); if (!tn) return; if (tn === 'off'){ setOpt('music', false); } else { settings.tune = tn; setOpt('music', true); audioOn(); if (AC && music.running){ music.step = 0; } } });
@@ -2898,7 +2912,19 @@ function openSetup(addNew){
   addingPlayer = !!addNew;
   draft = (profile && !addNew) ? JSON.parse(JSON.stringify(profile)) : { gender: 'princess', name: '', skin: 0, hair: 1, style: 0, dob: '', owned: [0], wear: 'level', maxHearts: 3, crowns: [0], crown: 0, eye: 0, shoe: 0, ownedHair: [0, 1, 2, 3, 4], ownedEye: [0, 1], ownedShoe: [0] };
   hide('title'); ['setupStep1', 'setupStep2', 'setupStep3', 'setupStep4'].forEach(hide); show('setupStep1'); show('setup');
+  $('setupCancel').hidden = !profile;
 }
+function goHome(){ ['setup', 'win', 'lose', 'revive', 'quiz', 'approve', 'locked', 'parent', 'settings', 'shop', 'stickerbook', 'petcorner'].forEach(hide); addingPlayer = false; pausedFrom = null; if (window.speechSynthesis) try { speechSynthesis.cancel(); } catch (e) {} voiceStop(); S.state = 'title'; showTitle(); }
+$('setupCancel').addEventListener('click', function(){ sfx.coin(); goHome(); });
+$('setupBack2').addEventListener('click', function(){ setupStep(1); });
+$('setupBack3').addEventListener('click', function(){ setupStep(2); });
+$('setupBack4').addEventListener('click', function(){ setupStep(3); });
+$('winHome').addEventListener('click', function(){ goHome(); });
+$('loseHome').addEventListener('click', function(){ goHome(); });
+$('reviveHome').addEventListener('click', function(){ goHome(); });
+$('setDress').addEventListener('click', function(){ if (pausedFrom === 'play') return; hide('settings'); S.state = 'title'; openShop(); });
+$('setStickers').addEventListener('click', function(){ if (pausedFrom === 'play') return; hide('settings'); S.state = 'title'; openStickers(); });
+$('setCorner').addEventListener('click', function(){ if (pausedFrom === 'play') return; hide('settings'); S.state = 'title'; openCorner(); });
 function setupStep(n){ ['setupStep1', 'setupStep2', 'setupStep3', 'setupStep4'].forEach(hide); show('setupStep' + n); if (n === 2){ $('nameInput').value = draft.name || ''; setTimeout(function(){ $('nameInput').focus(); }, 100); } if (n === 3) renderLook(); if (n === 4) $('dobInput').value = draft.dob || ''; }
 $('setupStep1').addEventListener('click', function(e){ var b = e.target.closest('button'); if (b && b.getAttribute('data-gender')){ draft.gender = b.getAttribute('data-gender'); sfx.coin(); setupStep(2); } });
 $('nameNext').addEventListener('click', function(){ var v = $('nameInput').value.trim(); if (!/[A-Za-z\u0900-\u097F]/.test(v)){ $('nameHint').textContent = 'Please type a name with letters, like Myra or Arjun.'; $('nameHint').hidden = false; $('nameInput').focus(); return; } $('nameHint').hidden = true; draft.name = v.replace(/[0-9]/g, '').trim().slice(0, 14); setupStep(3); });
