@@ -48,28 +48,30 @@ jobs:
         run: gradle assembleRelease --no-daemon --stacktrace
 
       - name: Name the APK
-        run: cp android/app/build/outputs/apk/release/app-release.apk MYRA.apk
+        run: cp android/app/build/outputs/apk/release/app-release.apk MyRush.apk && cp MyRush.apk MYRA.apk
 
       - name: Keep the APK with this run
         uses: actions/upload-artifact@v4
         with:
-          name: MYRA-apk
-          path: MYRA.apk
+          name: MyRush-apk
+          path: MyRush.apk
 
       - name: Publish the APK as a release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: MYRA build ${{ github.run_number }}
+          name: MY Rush build ${{ github.run_number }}
           body: |
-            **How to install MYRA on an Android phone or tablet**
+            **How to install MY Rush on an Android phone or tablet**
 
-            1. Tap MYRA.apk below. If Chrome warns "This file might be harmful", tap the arrow or "More" next to the warning and choose **Download anyway**. Chrome says this for every app that does not come from the Play Store.
+            1. Tap MyRush.apk below. If Chrome warns "This file might be harmful", tap the arrow or "More" next to the warning and choose **Download anyway**. Chrome says this for every app that does not come from the Play Store.
             2. Open the downloaded file. If Android says installs from this source are not allowed, tap **Settings**, switch on **Allow from this source**, and go back.
             3. If Google Play Protect says "Unknown app", tap **More details**, then **Install anyway**. You can let it scan the app.
-            4. Open MYRA. It works fully offline and sends nothing anywhere.
+            4. Open MY Rush. It works fully offline and sends nothing anywhere.
 
-            Direct download of the newest version, for sharing: https://github.com/Sagar-Kadam101/princess-myra-game/releases/latest/download/MYRA.apk
+            Direct download of the newest version, for sharing: https://github.com/Sagar-Kadam101/princess-myra-game/releases/latest/download/MyRush.apk
 
-            MYRA installs as its own app. If an older "Princess Myra" or "MyRush" app is on the phone it stays separate and can be uninstalled. From build 35 on, newer builds install over older ones and keep all progress.
-          files: MYRA.apk
+            MY Rush installs as its own app. MYRA.apk is the same file under the old name so older shared links keep working. If an older "Princess Myra" or "MyRush" app is on the phone it stays separate and can be uninstalled. From build 35 on, newer builds install over older ones and keep all progress.
+          files: |
+            MyRush.apk
+            MYRA.apk
