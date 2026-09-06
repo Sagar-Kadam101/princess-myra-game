@@ -8,7 +8,7 @@
     </queries>
 
     <application
-        android:label="MyRush"
+        android:label="MYRA"
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="true"
         android:hardwareAccelerated="true"

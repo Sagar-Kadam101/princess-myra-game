@@ -48,26 +48,26 @@ jobs:
         run: gradle assembleRelease --no-daemon --stacktrace
 
       - name: Name the APK
-        run: cp android/app/build/outputs/apk/release/app-release.apk MyRush.apk
+        run: cp android/app/build/outputs/apk/release/app-release.apk MYRA.apk
 
       - name: Keep the APK with this run
         uses: actions/upload-artifact@v4
         with:
-          name: MyRush-apk
-          path: MyRush.apk
+          name: MYRA-apk
+          path: MYRA.apk
 
       - name: Publish the APK as a release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: MyRush build ${{ github.run_number }}
+          name: MYRA build ${{ github.run_number }}
           body: |
-            **How to install MyRush on an Android phone or tablet**
+            **How to install MYRA on an Android phone or tablet**
 
-            1. Tap MyRush.apk below. If Chrome warns "This file might be harmful", tap the arrow or "More" next to the warning and choose **Download anyway**. Chrome says this for every app that does not come from the Play Store.
+            1. Tap MYRA.apk below. If Chrome warns "This file might be harmful", tap the arrow or "More" next to the warning and choose **Download anyway**. Chrome says this for every app that does not come from the Play Store.
             2. Open the downloaded file. If Android says installs from this source are not allowed, tap **Settings**, switch on **Allow from this source**, and go back.
             3. If Google Play Protect says "Unknown app", tap **More details**, then **Install anyway**. You can let it scan the app.
-            4. Open MyRush. It works fully offline and sends nothing anywhere.
+            4. Open MYRA. It works fully offline and sends nothing anywhere.
 
             Installing a newer build over an older one keeps all progress. If you still have build 21 or older, uninstall it once before installing this build.
-          files: MyRush.apk
+          files: MYRA.apk
