@@ -214,7 +214,7 @@
       <canvas id="shopPreview" class="preview" width="200" height="200"></canvas>
       <div class="dressright">
         <p class="small" id="shopCoins"></p>
-        <div class="row tabs" id="shopTabs"><button data-tab="dress">Dress</button><button data-tab="hair">Hair</button><button data-tab="eyes">Eyes</button><button data-tab="crown">Crown</button><button data-tab="shoes">Shoes</button><button data-tab="skin">Skin</button><button data-tab="hearts">Hearts</button></div>
+        <div class="row tabs" id="shopTabs"><button data-tab="dress">Dress</button><button data-tab="hair">Hair</button><button data-tab="face">Face</button><button data-tab="eyes">Eyes</button><button data-tab="crown">Crown</button><button data-tab="shoes">Shoes</button><button data-tab="skin">Skin</button><button data-tab="hearts">Hearts</button></div>
         <div id="shopItems" class="shop swrow"></div>
       </div>
     </div>
@@ -515,7 +515,7 @@ function diffMul(){ return settings.diff === 'gentle' ? 0.8 : settings.diff === 
 function gentle(){ return settings.diff === 'gentle'; }
 var profiles = load('ppc-profiles', null), curIdx = load('ppc-current', 0), profile = null;
 function newId(){ return 'p' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36); }
-function migrateProfile(p){ if (!p) return; if (!p.id) p.id = newId(); if (p.skin == null || p.skin > 2) p.skin = Math.min(2, p.skin || 0); if (!p.pets) p.pets = []; if (!p.owned) p.owned = [0]; if (p.wear == null) p.wear = 'level'; if (!p.maxHearts) p.maxHearts = 3; if (!p.crowns) p.crowns = [0]; if (p.crown == null) p.crown = 0; if (p.eye == null) p.eye = 0; if (p.shoe == null) p.shoe = 0; if (!p.ownedHair) p.ownedHair = [0, 1, 2, 3, 4]; if (!p.ownedEye) p.ownedEye = [0, 1]; if (!p.ownedShoe) p.ownedShoe = [0]; if (!p.stickers) p.stickers = [];  }
+function migrateProfile(p){ if (!p) return; if (!p.id) p.id = newId(); if (p.skin == null || p.skin > 2) p.skin = Math.min(2, p.skin || 0); if (p.face == null) p.face = 0; if (!p.pets) p.pets = []; if (!p.owned) p.owned = [0]; if (p.wear == null) p.wear = 'level'; if (!p.maxHearts) p.maxHearts = 3; if (!p.crowns) p.crowns = [0]; if (p.crown == null) p.crown = 0; if (p.eye == null) p.eye = 0; if (p.shoe == null) p.shoe = 0; if (!p.ownedHair) p.ownedHair = [0, 1, 2, 3, 4]; if (!p.ownedEye) p.ownedEye = [0, 1]; if (!p.ownedShoe) p.ownedShoe = [0]; if (!p.stickers) p.stickers = [];  }
 if (!profiles){
   var legacy = load('ppc-profile', null); profiles = [];
   if (legacy){ legacy.id = 'p0'; profiles.push(legacy); var lt = load('ppc-total', null), ls = load('ppc-stats', null); if (lt) save('ppc-total-p0', lt); if (ls) save('ppc-stats-p0', ls); }
@@ -889,6 +889,7 @@ var STICKERS = [
 ];
 function stickerById(id){ for (var i = 0; i < STICKERS.length; i++) if (STICKERS[i].id === id) return STICKERS[i]; return null; }
 function hasSticker(id){ return !!(profile && profile.stickers && profile.stickers.indexOf(id) >= 0); }
+var FACES = ['Sweet', 'Happy', 'Cheeky', 'Cool', 'Freckles'];
 var HAIR_STYLES = { princess: ['Long', 'Ponytail', 'Pigtails', 'Bun', 'Bob', 'Curly'], prince: ['Neat', 'Spiky', 'Curly', 'Swoop', 'Long'] };
 var THEMES = [
   { name: 'night', top: '#070620', mid: '#2a1a55', bot: '#4a2a78', stars: true, moon: true, hills: ['#1e1447', '#2a1c5e'], tree: '#231652', grass: '#2f6b3a', grassTop: '#3f8a4c', dirt: '#3b2b45', cloud: 'rgba(95,65,150,0.75)', water: '#1b2a5a', dark: true },
@@ -1052,7 +1053,6 @@ function genLevel(lv){
   Lv.castleGate = { x: Lv.goalX + 10, y: 0, w: 16, h: GY, kind: 'gate', open: false, asked: true, castle: true }; Lv.solids.push(Lv.castleGate);
   var knownPets = (profile && profile.pets) ? profile.pets : [], petInfo = null, petKnown = false;
   if (lv % RESCUE_EVERY === 0){ petInfo = PETS[(Math.floor(lv / RESCUE_EVERY) - 1) % PETS.length]; petKnown = knownPets.indexOf(petInfo[1]) >= 0; }
-  else if (knownPets.length){ var pe = knownPets[lv % knownPets.length]; for (var pi2 = 0; pi2 < PETS.length; pi2++) if (PETS[pi2][1] === pe) petInfo = PETS[pi2]; petKnown = true; }
   Lv.pet = petInfo ? { x: Lv.goalX + 130, y: GY, emoji: petInfo[1], name: petInfo[0], state: 'hidden', t: 0, known: petKnown } : null;
 
   for (i = 0; i < Lv.length / 22; i++){ var tx2 = i * 22 + rnd(0, 18); if (surfaceAt(Lv, tx2) === GY) Lv.tufts.push({ x: tx2, y: GY }); }
@@ -2034,6 +2034,7 @@ function drawCharacter(o){
     if (front && P0.palm > 0.5){ ctx.save(); ctx.translate(A[2], A[3]); ctx.rotate(A[4]); outlined(function(){ ctx.beginPath(); ctx.ellipse(0, 3, 3.4, 5.6, 0, 0, TAU); }, skin); ctx.restore(); }
     else outlined(function(){ ctx.beginPath(); ctx.arc(A[2], A[3], fighting || run ? 4.4 : 3.8, 0, TAU); }, skin); }
   arm(AB, -shX, false);
+  ctx.fillStyle = skin; rrect(-4.5, hy + 12, 9, (shY + 6) - (hy + 12), 2);
   if (prince){
     outlined(function(){ ctx.beginPath(); ctx.moveTo(-14, shY - 2); ctx.lineTo(14, shY - 2); ctx.lineTo(13, hip + 6); ctx.lineTo(-13, hip + 6); ctx.closePath(); }, D.dress);
     ctx.fillStyle = '#3b2412'; ctx.fillRect(-13, hip - 4, 26, 6); ctx.fillStyle = '#ffd23f'; rrect(-4, hip - 5, 8, 8, 2); ctx.fillStyle = '#3b2412'; rrect(-2, hip - 3, 4, 4, 1);
@@ -2090,7 +2091,11 @@ function drawCharacter(o){
   else { ctx.beginPath(); ctx.moveTo(-10, ey - 6.5); ctx.quadraticCurveTo(-6.5, ey - 9, -3, ey - 7.5); ctx.moveTo(3, ey - 7.5); ctx.quadraticCurveTo(6.5, ey - 9, 10, ey - 6.5); ctx.stroke();
     ctx.strokeStyle = '#2a1a3a'; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(ex1 - 2.6, ey - 3); ctx.lineTo(ex1 - 4.2, ey - 4.3); ctx.moveTo(ex2 + 2.6, ey - 3); ctx.lineTo(ex2 + 4.2, ey - 4.3); ctx.stroke(); }
   ctx.fillStyle = 'rgba(255,120,160,0.35)'; ellipse(-11, ey + 6, 3.4, 2.2); ellipse(11, ey + 6, 3.4, 2.2);
-  ctx.strokeStyle = prince ? '#8a4a3a' : '#d9486a'; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.arc(0.5, ey + 6.5, 3.6, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+  var face = o.face || 0;
+  if (face === 1){ ctx.fillStyle = '#7a2a3a'; ctx.beginPath(); ctx.arc(0.5, ey + 6, 4.6, 0.05 * Math.PI, 0.95 * Math.PI); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#fff'; ctx.fillRect(-3, ey + 6, 7, 1.6); ctx.fillStyle = '#ff6fae'; ctx.beginPath(); ctx.arc(1, ey + 9.5, 2.2, 0, TAU); ctx.fill(); }
+  else if (face === 2){ ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(ex2, ey, prince ? 3.2 : 3.6, 0, TAU); ctx.fill(); ctx.strokeStyle = '#2a1a3a'; ctx.lineWidth = 1.6; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(ex2 - 3, ey + 0.5); ctx.quadraticCurveTo(ex2, ey + 3, ex2 + 3, ey + 0.5); ctx.stroke(); ctx.strokeStyle = prince ? '#8a4a3a' : '#d9486a'; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.arc(0.5, ey + 6.5, 3.6, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke(); ctx.fillStyle = '#ff6fae'; ctx.beginPath(); ctx.ellipse(3, ey + 10.2, 2, 2.6, 0, 0, TAU); ctx.fill(); }
+  else if (face === 3){ ctx.strokeStyle = '#2a1a3a'; ctx.lineWidth = 1.6; ctx.fillStyle = 'rgba(60,40,90,0.55)'; [ex1, ex2].forEach(function(ex){ ctx.beginPath(); ctx.roundRect ? ctx.roundRect(ex - 5, ey - 4.2, 10, 7.5, 3) : ctx.rect(ex - 5, ey - 4.2, 10, 7.5); ctx.fill(); ctx.stroke(); }); ctx.beginPath(); ctx.moveTo(ex1 + 5, ey - 1); ctx.lineTo(ex2 - 5, ey - 1); ctx.stroke(); ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(ex1 - 3.5, ey - 3, 2.5, 1.5); ctx.fillRect(ex2 - 3.5, ey - 3, 2.5, 1.5); ctx.strokeStyle = prince ? '#8a4a3a' : '#d9486a'; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(-2.5, ey + 8); ctx.quadraticCurveTo(2, ey + 10, 4.5, ey + 7); ctx.stroke(); }
+  else { ctx.strokeStyle = prince ? '#8a4a3a' : '#d9486a'; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.arc(0.5, ey + 6.5, 3.6, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke(); if (face === 4){ ctx.fillStyle = 'rgba(150,80,40,0.55)'; [-13, -10.5, -8, 8, 10.5, 13].forEach(function(fx3, fi){ circle(fx3, ey + 5 + (fi % 2) * 1.6, 0.7); }); } }
   arm(AA, shX, true);
   if (o.power && o.power !== 'star' && o.power !== 'bag' && !fighting){ ctx.save(); ctx.translate(AA[2], AA[3]); drawWeapon(o.power, run ? 0.2 : 0); ctx.restore(); }
   if (striking > 0){ ctx.strokeStyle = 'rgba(255,243,176,' + (0.85 * striking) + ')'; ctx.lineWidth = 2.2; ctx.beginPath(); for (var l = -1; l <= 1; l++){ ctx.moveTo(AA[2] + 7, AA[3] + l * 6); ctx.lineTo(AA[2] + 22 + 8 * striking, AA[3] + l * 8); } ctx.stroke(); }
@@ -2101,7 +2106,7 @@ function drawCharacter(o){
 }
 
 function playerLook(){
-  return { gender: profile ? profile.gender : 'princess', skin: profile ? SKINS[profile.skin || 0] : SKINS[0], hair: profile ? HAIRS[profile.hair == null ? 1 : profile.hair] : HAIRS[1], style: profile ? (profile.style || 0) : 0, outfit: outfit(), crown: profile ? (profile.crown || 0) : 0, eye: profile ? EYES[profile.eye || 0][1] : EYES[0][1], shoe: profile ? SHOES[profile.shoe || 0][1] : null };
+  return { gender: profile ? profile.gender : 'princess', skin: profile ? SKINS[profile.skin || 0] : SKINS[0], hair: profile ? HAIRS[profile.hair == null ? 1 : profile.hair] : HAIRS[1], style: profile ? (profile.style || 0) : 0, outfit: outfit(), crown: profile ? (profile.crown || 0) : 0, eye: profile ? EYES[profile.eye || 0][1] : EYES[0][1], shoe: profile ? SHOES[profile.shoe || 0][1] : null, face: profile ? (profile.face || 0) : 0 };
 }
 function drawPlayer(){
   var t = S.time, cx = P.x + P.w / 2, fy = P.y + P.h;
@@ -2949,7 +2954,7 @@ function turntable(cv, look){
 }
 function drawPreview(){
   var saved = ctx; ctx = previewCtx;
-  turntable($('preview'), { gender: draft.gender, skin: SKINS[draft.skin], hair: HAIRS[draft.hair], style: draft.style, outfit: OUTFITS[typeof draft.wear === 'number' ? draft.wear : 0], crown: draft.crown || 0, eye: EYES[draft.eye || 0][1], shoe: SHOES[draft.shoe || 0][1] });
+  turntable($('preview'), { gender: draft.gender, skin: SKINS[draft.skin], hair: HAIRS[draft.hair], style: draft.style, outfit: OUTFITS[typeof draft.wear === 'number' ? draft.wear : 0], crown: draft.crown || 0, eye: EYES[draft.eye || 0][1], shoe: SHOES[draft.shoe || 0][1], face: draft.face || 0 });
   ctx = saved;
 }
 function drawPreviewOld(){
@@ -3045,10 +3050,10 @@ var shopTab = 'dress', shopCtx = $('shopPreview').getContext('2d'), shopMsg = ''
 function drawShopPreview(){
   var saved = ctx; ctx = shopCtx; turntable($('shopPreview'), playerLook()); ctx = saved;
 }
-function styleThumb(cv, styleIdx){
+function styleThumb(cv, styleIdx, faceIdx){
   var c2 = cv.getContext('2d'), saved = ctx; ctx = c2; ctx.clearRect(0, 0, cv.width, cv.height);
   ctx.save(); ctx.translate(cv.width / 2, cv.height + 50); ctx.scale(1.6, 1.6);
-  var lk = playerLook(); lk.style = styleIdx; lk.facing = 1; lk.run = 0; lk.inAir = false; lk.crouch = false; lk.dance = false; lk.p = 0; lk.punch = 0; lk.kick = 0; lk.power = null; lk.t = 0; lk.guard = false;
+  var lk = playerLook(); if (styleIdx != null) lk.style = styleIdx; if (faceIdx != null) lk.face = faceIdx; lk.facing = 1; lk.run = 0; lk.inAir = false; lk.crouch = false; lk.dance = false; lk.p = 0; lk.punch = 0; lk.kick = 0; lk.power = null; lk.t = 0; lk.guard = false;
   drawCharacter(lk);
   ctx.restore(); ctx = saved;
 }
@@ -3056,7 +3061,7 @@ function swatch(box, o){
   // o: { color, label, price, owned, on, gradient, onPick }
   var d = document.createElement('div'); d.className = 'sw' + (o.on ? ' on' : '') + (o.owned ? '' : ' locked'); d.title = o.label;
   d.style.background = o.gradient || o.color || 'rgba(255,255,255,0.15)';
-  if (o.thumb != null){ d.className += ' thumb'; var tc = document.createElement('canvas'); tc.width = 64; tc.height = 64; d.appendChild(tc); styleThumb(tc, o.thumb); }
+  if (o.thumb != null || o.faceThumb != null){ d.className += ' thumb'; var tc = document.createElement('canvas'); tc.width = 64; tc.height = 64; d.appendChild(tc); styleThumb(tc, o.thumb != null ? o.thumb : null, o.faceThumb != null ? o.faceThumb : null); }
   var lab = document.createElement('span'); lab.className = 'swlab'; lab.textContent = o.label; d.appendChild(lab);
   if (!o.owned){ var pr = document.createElement('span'); pr.className = 'price'; pr.textContent = o.price; d.appendChild(pr); }
   d.addEventListener('click', function(){
@@ -3081,6 +3086,8 @@ function renderShop(){
     styles.forEach(function(n, i){ swatch(box, { thumb: i, label: n, price: 0, owned: true, on: (profile.style || 0) === i, onPick: function(){ profile.style = i; } }); });
     var br = document.createElement('div'); br.className = 'swbreak'; box.appendChild(br);
     HAIRS.forEach(function(c, i){ swatch(box, { color: c, label: HAIR_NAMES[i], price: HAIR_PRICE[i], owned: profile.ownedHair.indexOf(i) >= 0, on: (profile.hair == null ? 1 : profile.hair) === i, onBuy: function(){ profile.ownedHair.push(i); }, onPick: function(){ profile.hair = i; } }); });
+  } else if (shopTab === 'face'){
+    FACES.forEach(function(n, i){ swatch(box, { faceThumb: i, label: n, price: 0, owned: true, on: (profile.face || 0) === i, onPick: function(){ profile.face = i; } }); });
   } else if (shopTab === 'eyes'){
     EYES.forEach(function(e, i){ swatch(box, { gradient: 'radial-gradient(circle at 50% 50%, #1a1024 0 22%, ' + e[1] + ' 24% 60%, #fff 62%)', label: e[0], price: e[2], owned: profile.ownedEye.indexOf(i) >= 0, on: (profile.eye || 0) === i, onBuy: function(){ profile.ownedEye.push(i); }, onPick: function(){ profile.eye = i; } }); });
   } else if (shopTab === 'crown'){
