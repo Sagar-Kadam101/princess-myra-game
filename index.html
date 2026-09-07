@@ -174,6 +174,7 @@
     <div id="resetNotice" class="notice" hidden></div>
     <div class="row players" id="playerRow" hidden></div>
     <button class="big-btn" id="playBtn">Start</button>
+    <div><button class="link-btn" id="restartBtn" hidden>Start again from level 1</button></div>
     <div class="row altrow"><button class="big-btn alt" id="shopBtn">Dress-up Room</button><button class="big-btn alt" id="stickerBtn">Sticker Book</button><button class="big-btn alt" id="cornerBtn">Pet Corner</button></div>
     <div><button class="link-btn" id="settingsBtn">Settings</button><button class="link-btn" id="grownupsTitle">Grown-ups</button></div>
   </div>
@@ -2605,6 +2606,7 @@ window.__cancelReset = function(){ lock.resetAt = 0; saveLock(); checkDelayedRes
 function refreshTitle(){
   checkDelayedReset();
   $('titleName').textContent = 'MY Rush';
+  var resumeLv = Math.max(1, (stats && stats.best) || 1); $('playBtn').textContent = resumeLv > 1 ? 'Continue from level ' + resumeLv : 'Start'; $('restartBtn').hidden = resumeLv <= 1;
   $('titleLine').textContent = 'The Grumpy King took all the candies from the castle! Help ' + playerTitle() + ' run across the rooftops, the maidan and the towers, dodge the professor, and bring them back.';
   var pl = $('petLine'); pl.innerHTML = '';
   if (profile && profile.pets && profile.pets.length){ pl.appendChild(document.createTextNode('Friends rescued: ')); profile.pets.forEach(function(pe){ var cv = document.createElement('canvas'); cv.width = 44; cv.height = 40; cv.className = 'petmini'; pl.appendChild(cv); petPortrait(cv, pe); }); }
@@ -3039,7 +3041,8 @@ window.addEventListener('pointercancel', pointerEnd);
 window.addEventListener('blur', function(){ pointers = {}; touch = {}; clearKeys(); });
 document.addEventListener('visibilitychange', function(){ if (document.hidden){ pointers = {}; touch = {}; clearKeys(); } });
 
-$('playBtn').addEventListener('click', function(){ audioOn(); if (!canPlay()){ lockGame(); return; } S.level = 1; S.coins = 0; S.candies = 0; startLevel(); });
+$('playBtn').addEventListener('click', function(){ audioOn(); if (!canPlay()){ lockGame(); return; } S.level = Math.max(1, (stats && stats.best) || 1); S.coins = 0; S.candies = 0; startLevel(); });
+$('restartBtn').addEventListener('click', function(){ audioOn(); if (!canPlay()){ lockGame(); return; } S.level = 1; S.coins = 0; S.candies = 0; startLevel(); });
 $('nextBtn').addEventListener('click', function(){ audioOn(); S.level++; startLevel(); });
 $('retryBtn').addEventListener('click', function(){ audioOn(); startLevel(); });
 $('quizSpeak').addEventListener('click', function(){ if (quiz.q){ var hl = { from: 0, onProgress: hlProgress }; if (quiz.words) quiz.words.forEach(function(s){ s.classList.remove('said', 'now'); }); if (quiz.q.enOnly) say(quiz.q.en, quiz.q.en, quiz.q.sayEn, null, hl); else say(quiz.q.q, quiz.q.en, quiz.q.say, quiz.q.sayEn, hl); } });
